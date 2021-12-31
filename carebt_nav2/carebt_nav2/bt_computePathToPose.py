@@ -22,6 +22,8 @@ from carebt.behaviorTreeRunner import BehaviorTreeRunner
 from carebt.nodeStatus import NodeStatus
 from carebt.parallelNode import ParallelNode
 from carebt.rateControlNode import RateControlNode
+from carebt_nav2_pyutil.geometry_utils import calculate_path_length, euclidean_distance
+from carebt_nav2_pyutil.robot_utils import get_current_pose
 from carebt_ros2.rosActionClientActionNode import RosActionClientActionNode
 from carebt_ros2.rosActionServerSequenceNode import RosActionServerSequenceNode
 from geometry_msgs.msg import PoseStamped
@@ -31,6 +33,8 @@ from nav2_msgs.action import NavigateToPose
 import rclpy
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
 
 ########################################################################
 
@@ -184,6 +188,7 @@ class ApproachPose(ParallelNode):
     def on_init(self) -> None:
         self.add_child(ComputePathToPoseActionRateLoop, '?pose => ?path')
         self.add_child(FollowPathAction, '?path')
+        # self.add_child(OdomSmoother, '=> ?odom')
 
 ########################################################################
 
@@ -194,6 +199,8 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
         super().__init__(bt_runner, NavigateToPose, 'navigate_to_pose')
         self.set_throttle_ms(250)
         self._start_time = None
+        self._tf_buffer = Buffer()
+        self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
 
     def on_init(self) -> None:
         self.register_contingency_handler(ApproachPose,
@@ -217,16 +224,31 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
     def on_tick(self) -> None:
         feedback_msg = NavigateToPose.Feedback()
 
+        # get current pose
+        robot_frame = 'base_link'
+        global_frame = 'map'
+        current_pose = get_current_pose(global_frame,
+                                        robot_frame,
+                                        self._tf_buffer)
+
+        # Find the closest pose on global path and calculate the path length
+        if(self._path is not None):
+            closest_pose_idx = 0
+            curr_min_dist = float('inf')
+            for idx, path_pose in enumerate(self._path.poses):
+                curr_dist = euclidean_distance(current_pose.pose, path_pose.pose)
+                if (curr_dist < curr_min_dist):
+                    curr_min_dist = curr_dist
+                    closest_pose_idx = idx
+            # Calculate path length
+            feedback_msg.distance_remaining = calculate_path_length(self._path, closest_pose_idx)
+
         # navigation_time
         delta = (datetime.now() - self._start_time).total_seconds()
         feedback_msg.navigation_time.sec = int(delta)
 
-        if(self._path is not None):
-            pass
-            # len(self._path.poses)
-
         # number_of_recoveries TODO
-        feedback_msg.number_of_recoveries = 999
+        feedback_msg.number_of_recoveries = 0  # TODO
 
         # send feedback
         self._goal_handle.publish_feedback(feedback_msg)

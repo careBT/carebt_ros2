@@ -1,16 +1,11 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>carebt_nav2</name>
+  <name>carebt_nav2_pyutil</name>
   <version>0.0.0</version>
-  <description>CareBT nodes for the Navigation2 stack.</description>
+  <description>Package with Python utility for nav2.</description>
   <maintainer email="steck.andi@gmail.com">Andreas Steck</maintainer>
   <license>Apache License 2.0</license>
-
-  <exec_depend>nav2_msgs</exec_depend>
-  <exec_depend>rclpy</exec_depend>
-  <exec_depend>carebt_ros2</exec_depend>
-  <exec_depend>carebt_nav2_pyutil</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
