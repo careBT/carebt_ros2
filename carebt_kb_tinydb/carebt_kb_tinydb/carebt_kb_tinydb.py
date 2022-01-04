@@ -20,6 +20,7 @@ import rclpy
 from rclpy.node import Node
 from tinydb import *
 
+KB_FILE_PARAM_NAME = 'kbfile'
 
 class KbQueryService(Node):
 
@@ -27,10 +28,10 @@ class KbQueryService(Node):
         super().__init__('carebt_kb_tinydb')
 
         # create tinydb
-        self.declare_parameter('kbfile_path', 'db.json')
-        self._kbfile_path = self.get_parameter('kbfile_path').get_parameter_value().string_value
-        self.get_logger().info('create tinydb kb from file: {}'.format(self._kbfile_path))
-        self._db = TinyDB(self._kbfile_path)
+        self.declare_parameter(KB_FILE_PARAM_NAME, 'db.json')
+        self._kbfile = self.get_parameter(KB_FILE_PARAM_NAME).get_parameter_value().string_value
+        self.get_logger().info('create tinydb kb from file: {}'.format(self._kbfile))
+        self._kb = TinyDB(self._kbfile)
 
         self.create_service(TellAsk, 'tellask', self.query_callback)
         self.add_on_set_parameters_callback(self.parameters_callback)
@@ -39,22 +40,22 @@ class KbQueryService(Node):
         for param in params:
             self.get_logger().info('parameters_callback for param: {} = {}'
                                    .format(param.name, param.value))
-            if(param.name == 'kbfile_path'
-               and param.value != self._kbfile_path):
+            if(param.name == KB_FILE_PARAM_NAME
+               and param.value != self._kbfile):
                 # close current tinydb
-                self.get_logger().info('close tinydb kb: {}'.format(self._kbfile_path))
-                self._db.close()
+                self.get_logger().info('close tinydb kb: {}'.format(self._kbfile))
+                self._kb.close()
 
                 # create new tinydb
-                self._kbfile_path = param.value
-                self.get_logger().info('create tinydb kb from file: {}'.format(self._kbfile_path))
-                self._db = TinyDB(self._kbfile_path)
+                self._kbfile = param.value
+                self.get_logger().info('create tinydb kb from file: {}'.format(self._kbfile))
+                self._kb = TinyDB(self._kbfile)
         return SetParametersResult(successful=True)
 
     def query_callback(self, request, response):
         self.get_logger().info('request: {}'.format(request.request))
         try:
-            exec('response.result = str(self._db.{})'.format(request.request))
+            exec('response.result = str(self._kb.{})'.format(request.request))
             response.success = True
             self.get_logger().info('result: {}'.format(response.result))
         except (AttributeError, RuntimeError) as err:
