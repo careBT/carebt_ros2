@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from datetime import datetime
+import math
 from threading import Thread
 
 from action_msgs.msg import GoalStatus
@@ -24,6 +25,7 @@ from carebt.parallelNode import ParallelNode
 from carebt.rateControlNode import RateControlNode
 from carebt_nav2_pyutil.geometry_utils import calculate_path_length, euclidean_distance
 from carebt_nav2_pyutil.robot_utils import get_current_pose
+from carebt_ros2.plugins.odom_smoother import OdomSmoother
 from carebt_ros2.rosActionClientActionNode import RosActionClientActionNode
 from carebt_ros2.rosActionServerSequenceNode import RosActionServerSequenceNode
 from geometry_msgs.msg import PoseStamped
@@ -31,6 +33,7 @@ from nav2_msgs.action import ComputePathToPose
 from nav2_msgs.action import FollowPath
 from nav2_msgs.action import NavigateToPose
 import rclpy
+from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from tf2_ros.buffer import Buffer
@@ -201,6 +204,7 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
         self._start_time = None
         self._tf_buffer = Buffer()
         self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
+        self._odom_smoother = bt_runner.odom_smoother
 
     def on_init(self) -> None:
         self.register_contingency_handler(ApproachPose,
@@ -247,6 +251,17 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
         delta = (datetime.now() - self._start_time).total_seconds()
         feedback_msg.navigation_time.sec = int(delta)
 
+        # estimated_time_remaining
+        twist = self._odom_smoother.get_twist()
+        current_linear_speed = math.hypot(twist.linear.x, twist.linear.y)
+        # Calculate estimated time taken to goal if speed is higher than 1cm/s
+        # and at least 10cm to go
+        if(abs(current_linear_speed) > 0.01 and feedback_msg.distance_remaining > 0.1):
+            feedback_msg.estimated_time_remaining.sec =\
+                int(feedback_msg.distance_remaining / abs(current_linear_speed))
+        else:
+            feedback_msg.estimated_time_remaining.sec = 0
+
         # number_of_recoveries TODO
         feedback_msg.number_of_recoveries = 0  # TODO
 
@@ -266,7 +281,7 @@ class BtNode(Node, Thread):
         bt_runner = BehaviorTreeRunner()
         bt_runner.get_logger().set_log_level(LogLevel.INFO)
         bt_runner.node = self
-        # bt_runner.run(ComputePathToPoseSequence, '-0.4 -1.8')
+        bt_runner.odom_smoother = OdomSmoother(self, 'odom', Duration(nanoseconds=500000000))
         bt_runner.run(ApproachPoseSequence)
         rclpy.shutdown()
 
