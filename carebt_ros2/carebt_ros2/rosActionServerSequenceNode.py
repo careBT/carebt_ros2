@@ -53,7 +53,8 @@ class RosActionServerSequenceNode(SequenceNode):
         # wait for _cond_succeed TODO: mutex oder so
         while(self._succeed is False):
             sleep(0.1)
-        goal_handle.succeed()
+        if goal_handle is not None and goal_handle.is_active:
+            goal_handle.succeed()
         return self.__result
 
     def __goal_callback(self, goal_request):

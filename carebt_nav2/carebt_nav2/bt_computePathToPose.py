@@ -214,7 +214,8 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
 
     def execute_callback(self):
         print('ApproachPoseSequence - execute_callback')
-        self._pose = self._goal_handle.request.pose
+        self._pose = self._goal_handle.request.pose  # TODO
+        self.remove_all_children()
         self.set_status(NodeStatus.RUNNING)
         self.append_child(ApproachPose, '?pose => ?path')
         self._start_time = datetime.now()
@@ -266,7 +267,7 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
         feedback_msg.number_of_recoveries = 0  # TODO
 
         # send feedback
-        self._goal_handle.publish_feedback(feedback_msg)
+        self._goal_handle.publish_feedback(feedback_msg)  # TODO
 
 ########################################################################
 
