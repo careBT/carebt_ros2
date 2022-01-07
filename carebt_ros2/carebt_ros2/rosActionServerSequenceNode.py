@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 from carebt.nodeStatus import NodeStatus
 from carebt.sequenceNode import SequenceNode
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
+from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import ReentrantCallbackGroup
 
 if TYPE_CHECKING:
@@ -33,11 +34,11 @@ class RosActionServerSequenceNode(SequenceNode):
                  action_name: str,
                  params: str = None):
         super().__init__(bt, params)
-        self._succeed = False
-        self._goal_handle = None
+        self.__succeed = False
+        self.__goal_handle = None
         self.__result = action_type.Result()
-        self._goal_lock = threading.Lock()
-        self._action_server = ActionServer(
+        self.__goal_lock = threading.Lock()
+        self.__action_server = ActionServer(
             bt.node,
             action_type,
             action_name,
@@ -49,9 +50,10 @@ class RosActionServerSequenceNode(SequenceNode):
         self.set_status(NodeStatus.SUSPENDED)
 
     def __execute_callback(self, goal_handle):
-        self.execute_callback()
-        # wait for _cond_succeed TODO: mutex oder so
-        while(self._succeed is False):
+        self.get_logger().debug('{} - __execute_callback'.format(self.__class__.__name__))
+        self.execute_callback(goal_handle)
+        # wait for __succeed TODO: mutex oder so
+        while(self.__succeed is False):
             sleep(0.1)
         goal_handle.succeed()
         return self.__result
@@ -63,26 +65,30 @@ class RosActionServerSequenceNode(SequenceNode):
 
     # replace current goal with new goal
     def __handle_accepted_callback(self, goal_handle):
-        with self._goal_lock:
+        with self.__goal_lock:
             self.get_logger().debug('{} - __handle_accepted_callback'
                                     .format(self.__class__.__name__))
-            if self._goal_handle is not None and self._goal_handle.is_active:
+            if self.__goal_handle is not None and self.__goal_handle.is_active:
                 self.get_logger().debug('{} - __handle_accepted_callback -- Destroy previous goal'
                                         .format(self.__class__.__name__))
-                # destroy old _goal_handle
-                self._goal_handle.destroy()
-            self._goal_handle = goal_handle
-            self._succeed = False
+                # destroy old __goal_handle
+                self.__goal_handle.destroy()
+            self.__goal_handle = goal_handle
+            self.__succeed = False
         goal_handle.execute()
 
-    def __cancel_callback(self):
+    def __cancel_callback(self, goal_handle):
         self.get_logger().debug('{} - __cancel_callback'.format(self.__class__.__name__))
+        self.cancel_callback(goal_handle)
         return CancelResponse.ACCEPT
 
     # PUBLIC
 
-    def execute_callback(self) -> None:
+    def execute_callback(self, goal_handle: ServerGoalHandle) -> None:
+        pass
+
+    def cancel_callback(self, goal_handle: ServerGoalHandle) -> None:
         pass
 
     def succeed(self) -> None:
-        self._succeed = True
+        self.__succeed = True
