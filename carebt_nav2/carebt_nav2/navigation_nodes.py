@@ -105,7 +105,6 @@ class FollowPathAction(RosActionClientActionNode):
         self._current_path = None
 
     def on_tick(self) -> None:
-        # print('FollowPathAction - on_tick')
         self._goal_msg = None
         # if there is a path
         if(self._path is not None):
@@ -116,6 +115,10 @@ class FollowPathAction(RosActionClientActionNode):
                 self._current_path = self._path
 
         self.set_status(NodeStatus.RUNNING)
+
+    def on_abort(self) -> None:
+        self._goal_handle.cancel_goal()
+        print("FollowPathAction - on_abort")
 
     def result_callback(self, future) -> None:
         status = future.result().status
@@ -150,6 +153,7 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
     def __init__(self, bt_runner):
         super().__init__(bt_runner, NavigateToPose, 'navigate_to_pose')
         self.set_throttle_ms(250)
+        self._goal_handle = None
         self._start_time = None
         self._tf_buffer = Buffer()
         self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
@@ -159,17 +163,33 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
         self.register_contingency_handler(ApproachPose,
                                           [NodeStatus.SUCCESS],
                                           r'.*',
-                                          self.handle_goal_reached),
+                                          self.handle_goal_reached)
+        
+        self.register_contingency_handler(ApproachPose,
+                                          [NodeStatus.ABORTED],
+                                          r'.*',
+                                          self.handle_aborted),
 
-    def execute_callback(self):
-        self._pose = self._goal_handle.request.pose  # TODO
+    def execute_callback(self, goal_handle):
+        self._goal_handle = goal_handle
+        self._pose = goal_handle.request.pose
         self.remove_all_children()
         self.set_status(NodeStatus.RUNNING)
         self.append_child(ApproachPose, '?pose => ?path')
         self._start_time = datetime.now()
 
+    def cancel_callback(self, goal_handle):
+        print("cancel_callback: {}".format(goal_handle))
+        goal_handle.abort()
+        goal_handle.destroy()
+        self.abort_current_child()
+
     def handle_goal_reached(self) -> None:
         self.succeed()
+        self.remove_all_children()
+        self.set_status(NodeStatus.SUSPENDED)
+
+    def handle_aborted(self) -> None:
         self.remove_all_children()
         self.set_status(NodeStatus.SUSPENDED)
 
