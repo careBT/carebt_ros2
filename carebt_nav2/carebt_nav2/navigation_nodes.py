@@ -35,6 +35,24 @@ from tf2_ros.transform_listener import TransformListener
 
 
 class CreatePose(ActionNode):
+    """The `CreatePose` node returns a PoseStamped.
+
+    The `CreatePose` node returns a PoseStamped corresponding to
+    the provided ?x and ?y coordinates. This node is just for
+    testing purposes.
+
+    Input Parameters
+    ----------------
+    ?x : int
+        The x coordinate
+    ?y : int
+        The y coordinate
+
+    Output Parameters
+    -----------------
+    ?pose : geometry_msgs.msg.PoseStamped
+        The pose corresponding to ?x and ?y
+    """
 
     def __init__(self, bt_runner):
         super().__init__(bt_runner, '?x ?y => ?pose')
@@ -56,6 +74,18 @@ class CreatePose(ActionNode):
 
 
 class ComputePathToPoseAction(RosActionClientActionNode):
+    """The `ComputePathToPoseAction` node provides a path to the goal position.
+
+    Input Parameters
+    ----------------
+    ?pose : PoseStamped
+        The goal position
+
+    Output Parameters
+    -----------------
+    ?path : nav_msgs.msg.Path
+        The planned path
+    """
 
     def __init__(self, bt_runner):
         super().__init__(bt_runner, ComputePathToPose, 'compute_path_to_pose', '?pose => ?path')
@@ -79,6 +109,22 @@ class ComputePathToPoseAction(RosActionClientActionNode):
 
 
 class ComputePathToPoseActionRateLoop(RateControlNode):
+    """Makes the `ComputePathToPoseAction` node running in a loop.
+
+    The `ComputePathToPoseActionRateLoop` makes the `ComputePathToPoseAction` node running in
+    a loop. As soon as the `ComputePathToPoseAction` node returns with `SUCCESS` the status
+    is set back to `RUNNING`.
+
+    Input Parameters
+    ----------------
+    ?pose : PoseStamped
+        The goal position
+
+    Output Parameters
+    -----------------
+    ?path : nav_msgs.msg.Path
+        The planned path
+    """
 
     def __init__(self, bt):
         super().__init__(bt, 1000, '?pose => ?path')
@@ -99,6 +145,13 @@ class ComputePathToPoseActionRateLoop(RateControlNode):
 
 
 class FollowPathAction(RosActionClientActionNode):
+    """The `FollowPathAction` send the path to the ROS2 controller node.
+
+    Input Parameters
+    ----------------
+    ?path : nav_msgs.msg.Path
+        The planned path to follow
+    """
 
     def __init__(self, bt_runner):
         super().__init__(bt_runner, FollowPath, 'follow_path', '?path')
@@ -118,7 +171,6 @@ class FollowPathAction(RosActionClientActionNode):
 
     def on_abort(self) -> None:
         self._goal_handle.cancel_goal()
-        print("FollowPathAction - on_abort")
 
     def result_callback(self, future) -> None:
         status = future.result().status
@@ -136,6 +188,22 @@ class FollowPathAction(RosActionClientActionNode):
 
 
 class ApproachPose(ParallelNode):
+    """The `ApproachPose` node is the main node to approch a goal position.
+
+    It runs the two child nodes to compute the path and to follow this path in
+    parallel. The current path is provided as output parameter, that it can be
+    'analysed' while the node is executing by a parent node.
+
+    Input Parameters
+    ----------------
+    ?pose : PoseStamped
+        The goal position
+
+    Output Parameters
+    -----------------
+    ?path : nav_msgs.msg.Path
+        The planned path
+    """
 
     def __init__(self, bt_runner):
         super().__init__(bt_runner, 1, '?pose => ?path')
@@ -149,6 +217,14 @@ class ApproachPose(ParallelNode):
 
 
 class ApproachPoseSequence(RosActionServerSequenceNode):
+    """The `ApproachPoseSequence` provides the ROS2 ActionServer for the NavigateToPose.
+
+    After the node is initialized it is in state `SUSPENDED` and waits for a pose
+    to navigate to. As soon as a request arrives the `execute_callback` is called which
+    adds the `ApproachPose` as child and sets the state of the node to `RUNNING`. If the
+    `ApproachPose` node returns with `SUCCESS` the `ApproachPoseSequence` is set to status
+    `SUSPENDED`. In the `on_tick` method the feedback is calculated.
+    """
 
     def __init__(self, bt_runner):
         super().__init__(bt_runner, NavigateToPose, 'navigate_to_pose')
@@ -164,7 +240,7 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
                                           [NodeStatus.SUCCESS],
                                           r'.*',
                                           self.handle_goal_reached)
-        
+
         self.register_contingency_handler(ApproachPose,
                                           [NodeStatus.ABORTED],
                                           r'.*',
@@ -179,7 +255,6 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
         self._start_time = datetime.now()
 
     def cancel_callback(self, goal_handle):
-        print("cancel_callback: {}".format(goal_handle))
         goal_handle.abort()
         goal_handle.destroy()
         self.abort_current_child()
