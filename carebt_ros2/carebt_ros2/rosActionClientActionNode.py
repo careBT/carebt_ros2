@@ -45,10 +45,10 @@ class RosActionClientActionNode(ActionNode):
     def __goal_response_callback(self, future):
         goal_handle = future.result()
         if not goal_handle.accepted:
-            self.get_logger().info('{} - Goal rejected'.format(self.__class__.__name__))
+            self.get_logger().debug('{} - Goal rejected'.format(self.__class__.__name__))
             return
 
-        self.get_logger().info('{} - Goal accepted'.format(self.__class__.__name__))
+        self.get_logger().debug('{} - Goal accepted'.format(self.__class__.__name__))
 
         self._get_result_future = goal_handle.get_result_async()
         self._get_result_future.add_done_callback(self.result_callback)

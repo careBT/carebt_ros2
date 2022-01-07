@@ -53,8 +53,7 @@ class RosActionServerSequenceNode(SequenceNode):
         # wait for _cond_succeed TODO: mutex oder so
         while(self._succeed is False):
             sleep(0.1)
-        if goal_handle is not None and goal_handle.is_active:
-            goal_handle.succeed()
+        goal_handle.succeed()
         return self.__result
 
     def __goal_callback(self, goal_request):
@@ -68,9 +67,10 @@ class RosActionServerSequenceNode(SequenceNode):
             self.get_logger().debug('{} - __handle_accepted_callback'
                                     .format(self.__class__.__name__))
             if self._goal_handle is not None and self._goal_handle.is_active:
-                self.get_logger().debug('{} - __handle_accepted_callback -- Aborting previous goal'
+                self.get_logger().debug('{} - __handle_accepted_callback -- Destroy previous goal'
                                         .format(self.__class__.__name__))
-                self._goal_handle.abort()  # TODO this should be preempt() or ???
+                # destroy old _goal_handle
+                self._goal_handle.destroy()
             self._goal_handle = goal_handle
             self._succeed = False
         goal_handle.execute()
