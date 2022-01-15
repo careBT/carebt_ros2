@@ -183,6 +183,7 @@ class ApproachPoseThroughPosesSequence(RosActionServerSequenceNode):
         # set number of remaining poses
         feedback_msg.number_of_poses_remaining = len(self._poses)
 
+        feedback_msg.current_pose = self._feedback.current_pose
         feedback_msg.distance_remaining = self._feedback.distance_remaining
         feedback_msg.navigation_time.sec = self._feedback.navigation_time.sec
         feedback_msg.estimated_time_remaining.sec = self._feedback.estimated_time_remaining.sec
