@@ -13,25 +13,24 @@
 # limitations under the License.
 
 from datetime import datetime
-import math
 from threading import Thread
 
 from carebt.abstractLogger import LogLevel
-from carebt.nodeStatus import NodeStatus
 from carebt.behaviorTreeRunner import BehaviorTreeRunner
+from carebt.nodeStatus import NodeStatus
 from carebt.parallelNode import ParallelNode
-from carebt_nav2.navigation_nodes import ApproachPose, ApproachPoseThroughPoses
-from carebt_nav2_pyutil.geometry_utils import calculate_remaining_path_length
-from carebt_nav2_pyutil.geometry_utils import calculate_travel_time
+from carebt_nav2.navigation_nodes import ApproachPose
+from carebt_nav2.navigation_nodes import ApproachPoseThroughPoses
 from carebt_nav2_pyutil.geometry_utils import euclidean_distance
 from carebt_nav2_pyutil.robot_utils import get_current_pose
-from carebt_ros2.rosActionServerSequenceNode import RosActionServerSequenceNode
 from carebt_ros2.plugins.odom_smoother import OdomSmoother
+from carebt_ros2.rosActionServerSequenceNode import RosActionServerSequenceNode
+from nav2_msgs.action import NavigateThroughPoses
+from nav2_msgs.action import NavigateToPose
 import rclpy
 from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
-from nav2_msgs.action import NavigateThroughPoses, NavigateToPose
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
@@ -52,10 +51,6 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
         super().__init__(bt_runner, NavigateToPose, 'navigate_to_pose')
         self.set_throttle_ms(250)
         self._goal_handle = None
-        self._start_time = None
-        self._tf_buffer = Buffer()
-        self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
-        self._odom_smoother = bt_runner.odom_smoother
 
     def on_init(self) -> None:
         self.register_contingency_handler(ApproachPose,
@@ -73,7 +68,7 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
         self._pose = goal_handle.request.pose
         self.remove_all_children()
         self.set_status(NodeStatus.RUNNING)
-        self.append_child(ApproachPose, '?pose => ?path')
+        self.append_child(ApproachPose, '?pose => ?feedback')
         self._start_time = datetime.now()
         self.get_logger().info('{} - starting to approach the goal (x, y): ({:.2f}, {:.2f})'
                                .format(self.__class__.__name__,
@@ -90,41 +85,18 @@ class ApproachPoseSequence(RosActionServerSequenceNode):
         self.succeed()
         self.remove_all_children()
         self.set_status(NodeStatus.SUSPENDED)
-        self.get_logger().info('{} - goal reached. Waiting for new goal...'.format(self.__class__.__name__))
+        self.get_logger().info('{} - goal reached. Waiting for new goal...'
+                               .format(self.__class__.__name__))
 
     def handle_aborted(self) -> None:
         self.remove_all_children()
         self.set_status(NodeStatus.SUSPENDED)
-        self.get_logger().info('{} - goal aborted. Waiting for new goal...'.format(self.__class__.__name__))
+        self.get_logger().info('{} - goal aborted. Waiting for new goal...'
+                               .format(self.__class__.__name__))
 
     def on_tick(self) -> None:
-        feedback_msg = NavigateToPose.Feedback()
-
-        # get current pose
-        robot_frame = 'base_link'
-        global_frame = 'map'
-        current_pose = get_current_pose(global_frame,
-                                        robot_frame,
-                                        self._tf_buffer)
-
-        # remaining path length
-        if(self._path is not None):
-            feedback_msg.distance_remaining = calculate_remaining_path_length(self._path, current_pose)
-
-        # navigation_time since start
-        delta = (datetime.now() - self._start_time).total_seconds()
-        feedback_msg.navigation_time.sec = int(delta)
-
-        # estimated_time_remaining
-        twist = self._odom_smoother.get_twist()
-        feedback_msg.estimated_time_remaining.sec =\
-            calculate_travel_time(twist, feedback_msg.distance_remaining)
-
-        # number_of_recoveries TODO
-        feedback_msg.number_of_recoveries = 0  # TODO
-
         # send feedback
-        self._goal_handle.publish_feedback(feedback_msg)
+        self._goal_handle.publish_feedback(self._feedback)
 
 ########################################################################
 
@@ -165,9 +137,10 @@ class ApproachPoseThroughPosesSequence(RosActionServerSequenceNode):
         self._poses = goal_handle.request.poses
         self.remove_all_children()
         self.set_status(NodeStatus.RUNNING)
-        self.append_child(ApproachPoseThroughPoses, '?poses => ?path')
+        self.append_child(ApproachPoseThroughPoses, '?poses => ?feedback')
         self._start_time = datetime.now()
-        self.get_logger().info('{} - starting to approach the goal (x, y): ({:.2f}, {:.2f}) through {} waypoints'
+        self.get_logger().info('{} - starting to approach the goal (x, y): ({:.2f}, {:.2f}) '
+                               'through {} waypoints'
                                .format(self.__class__.__name__,
                                        self._poses[-1].pose.position.x,
                                        self._poses[-1].pose.position.y,
@@ -183,12 +156,14 @@ class ApproachPoseThroughPosesSequence(RosActionServerSequenceNode):
         self.succeed()
         self.remove_all_children()
         self.set_status(NodeStatus.SUSPENDED)
-        self.get_logger().info('{} - goal reached. Waiting for new goals...'.format(self.__class__.__name__))
+        self.get_logger().info('{} - goal reached. Waiting for new goals...'
+                               .format(self.__class__.__name__))
 
     def handle_aborted(self) -> None:
         self.remove_all_children()
         self.set_status(NodeStatus.SUSPENDED)
-        self.get_logger().info('{} - goal aborted. Waiting for new goals...'.format(self.__class__.__name__))
+        self.get_logger().info('{} - goal aborted. Waiting for new goals...'
+                               .format(self.__class__.__name__))
 
     def on_tick(self) -> None:
         feedback_msg = NavigateThroughPoses.Feedback()
@@ -201,27 +176,17 @@ class ApproachPoseThroughPosesSequence(RosActionServerSequenceNode):
                                         self._tf_buffer)
 
         # check if next intermediate waypoint has been passed
+        # TODO remove magic number
         if(len(self._poses) > 0
-           and euclidean_distance(current_pose.pose, self._poses[0].pose) < 0.5):  # TODO remove magic number
+           and euclidean_distance(current_pose.pose, self._poses[0].pose) < 0.5):
             del self._poses[0]
         # set number of remaining poses
         feedback_msg.number_of_poses_remaining = len(self._poses)
 
-        # remaining path length
-        if(self._path is not None):
-            feedback_msg.distance_remaining = calculate_remaining_path_length(self._path, current_pose)
-
-        # navigation_time since start
-        delta = (datetime.now() - self._start_time).total_seconds()
-        feedback_msg.navigation_time.sec = int(delta)
-
-        # estimated_time_remaining
-        twist = self._odom_smoother.get_twist()
-        feedback_msg.estimated_time_remaining.sec =\
-            calculate_travel_time(twist, feedback_msg.distance_remaining)
-
-        # number_of_recoveries TODO
-        feedback_msg.number_of_recoveries = 0  # TODO
+        feedback_msg.distance_remaining = self._feedback.distance_remaining
+        feedback_msg.navigation_time.sec = self._feedback.navigation_time.sec
+        feedback_msg.estimated_time_remaining.sec = self._feedback.estimated_time_remaining.sec
+        feedback_msg.number_of_recoveries = self._feedback.number_of_recoveries
 
         # send feedback
         self._goal_handle.publish_feedback(feedback_msg)
@@ -230,8 +195,7 @@ class ApproachPoseThroughPosesSequence(RosActionServerSequenceNode):
 ########################################################################
 
 class NavigatorNode(ParallelNode):
-    """Navigate to poses or through poses.
-    """
+    """Navigate to poses or through poses."""
 
     def __init__(self, bt_runner):
         super().__init__(bt_runner, 2, '')
@@ -240,6 +204,9 @@ class NavigatorNode(ParallelNode):
     def on_init(self) -> None:
         self.add_child(ApproachPoseSequence)
         self.add_child(ApproachPoseThroughPosesSequence)
+
+########################################################################
+
 
 class BtNode(Node, Thread):
 

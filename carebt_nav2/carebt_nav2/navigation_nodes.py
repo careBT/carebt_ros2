@@ -12,15 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
+
 from action_msgs.msg import GoalStatus
 from carebt.actionNode import ActionNode
 from carebt.nodeStatus import NodeStatus
 from carebt.parallelNode import ParallelNode
 from carebt.rateControlNode import RateControlNode
+from carebt_nav2_pyutil.geometry_utils import calculate_remaining_path_length
+from carebt_nav2_pyutil.geometry_utils import calculate_travel_time
+from carebt_nav2_pyutil.robot_utils import get_current_pose
 from carebt_ros2.rosActionClientActionNode import RosActionClientActionNode
 from geometry_msgs.msg import PoseStamped
-from nav2_msgs.action import ComputePathThroughPoses, ComputePathToPose
+from nav2_msgs.action import ComputePathThroughPoses
+from nav2_msgs.action import ComputePathToPose
 from nav2_msgs.action import FollowPath
+from nav2_msgs.action import NavigateToPose
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
 
 ########################################################################
 
@@ -121,10 +130,8 @@ class ComputePathThroughPosesAction(RosActionClientActionNode):
     """
 
     def __init__(self, bt_runner):
-        super().__init__(bt_runner,
-                         ComputePathThroughPoses,
-                        'compute_path_through_poses',
-                        '?poses => ?path')
+        super().__init__(bt_runner, ComputePathThroughPoses,
+                         'compute_path_through_poses', '?poses => ?path')
 
     def on_tick(self) -> None:
         self._goal_msg.goals = self._poses
@@ -222,6 +229,56 @@ class ComputePathThroughPosesActionRateLoop(RateControlNode):
 ########################################################################
 
 
+class CreateFollowPathFeedback(ActionNode):
+    """Returns feedback for the current NavigateToPose action.
+
+    Input Parameters
+    ----------------
+    ?path : nav_msgs.msg.Path
+        The planned path
+
+    Output Parameters
+    -----------------
+    ?feedback : nav2_msgs.action.NavigateToPose_FeedbackMessage
+        The feedback for the current NavigateToPose action
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner, '?path => ?feedback')
+        self._feedback = NavigateToPose.Feedback()
+        self._start_time = datetime.now()
+        self._tf_buffer = Buffer()
+        self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
+        self._odom_smoother = bt_runner.odom_smoother
+
+    def on_tick(self) -> None:
+        # get current pose
+        robot_frame = 'base_link'
+        global_frame = 'map'
+        current_pose = get_current_pose(global_frame,
+                                        robot_frame,
+                                        self._tf_buffer)
+
+        # remaining path length
+        if(self._path is not None and current_pose is not None):
+            self._feedback.distance_remaining =\
+                calculate_remaining_path_length(self._path, current_pose)
+
+        # navigation_time since start
+        delta = (datetime.now() - self._start_time).total_seconds()
+        self._feedback.navigation_time.sec = int(delta)
+
+        # estimated_time_remaining
+        twist = self._odom_smoother.get_twist()
+        self._feedback.estimated_time_remaining.sec =\
+            calculate_travel_time(twist, self._feedback.distance_remaining)
+
+        # number_of_recoveries TODO
+        self._feedback.number_of_recoveries = 0  # TODO
+
+########################################################################
+
+
 class FollowPathAction(RosActionClientActionNode):
     """Send the path to the ROS2 controller node.
 
@@ -280,17 +337,18 @@ class ApproachPose(ParallelNode):
 
     Output Parameters
     -----------------
-    ?path : nav_msgs.msg.Path
-        The planned path
+    ?feedback : nav2_msgs.action.NavigateToPose_FeedbackMessage
+        The feedback for the current NavigateToPose action
     """
 
     def __init__(self, bt_runner):
-        super().__init__(bt_runner, 1, '?pose => ?path')
+        super().__init__(bt_runner, 1, '?pose => ?feedback')
         self._pose = None
 
     def on_init(self) -> None:
         self.add_child(ComputePathToPoseActionRateLoop, '?pose => ?path')
         self.add_child(FollowPathAction, '?path')
+        self.add_child(CreateFollowPathFeedback, '?path => ?feedback')
 
 ########################################################################
 
@@ -309,14 +367,15 @@ class ApproachPoseThroughPoses(ParallelNode):
 
     Output Parameters
     -----------------
-    ?path : nav_msgs.msg.Path
-        The planned path
+    ?feedback : nav2_msgs.action.NavigateToPose_FeedbackMessage
+        The feedback for the current NavigateToPose action
     """
 
     def __init__(self, bt_runner):
-        super().__init__(bt_runner, 1, '?poses => ?path')
+        super().__init__(bt_runner, 1, '?poses => ?feedback')
         self._poses = None
 
     def on_init(self) -> None:
         self.add_child(ComputePathThroughPosesActionRateLoop, '?poses => ?path')
         self.add_child(FollowPathAction, '?path')
+        self.add_child(CreateFollowPathFeedback, '?path => ?feedback')
