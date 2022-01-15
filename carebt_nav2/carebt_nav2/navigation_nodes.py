@@ -19,14 +19,14 @@ from carebt.parallelNode import ParallelNode
 from carebt.rateControlNode import RateControlNode
 from carebt_ros2.rosActionClientActionNode import RosActionClientActionNode
 from geometry_msgs.msg import PoseStamped
-from nav2_msgs.action import ComputePathToPose
+from nav2_msgs.action import ComputePathThroughPoses, ComputePathToPose
 from nav2_msgs.action import FollowPath
 
 ########################################################################
 
 
 class CreatePose(ActionNode):
-    """The `CreatePose` node returns a PoseStamped.
+    """Returns a PoseStamped.
 
     The `CreatePose` node returns a PoseStamped corresponding to
     the provided ?x and ?y coordinates. This node is just for
@@ -65,7 +65,7 @@ class CreatePose(ActionNode):
 
 
 class ComputePathToPoseAction(RosActionClientActionNode):
-    """The `ComputePathToPoseAction` node provides a path to the goal position.
+    """Provides a path to the goal position.
 
     Input Parameters
     ----------------
@@ -88,6 +88,58 @@ class ComputePathToPoseAction(RosActionClientActionNode):
     def result_callback(self, future) -> None:
         status = future.result().status
 
+        if(status == GoalStatus.STATUS_SUCCEEDED):
+            self._path = future.result().result.path
+            self.set_status(NodeStatus.SUCCESS)
+        elif(status == GoalStatus.STATUS_ABORTED):
+            # we can not distinguish between an abort due to a new goal (old goal aborted)
+            # and a real abort of a goal due to a failure in the processing
+            pass
+        if(status == GoalStatus.STATUS_SUCCEEDED):
+            self._path = future.result().result.path
+            self.set_status(NodeStatus.SUCCESS)
+        elif(status == GoalStatus.STATUS_ABORTED):
+            # we can not distinguish between an abort due to a new goal (old goal aborted)
+            # and a real abort of a goal due to a failure in the processing
+            pass
+
+########################################################################
+
+
+class ComputePathThroughPosesAction(RosActionClientActionNode):
+    """Provides a path to the goal position through intermediate waypoints.
+
+    Input Parameters
+    ----------------
+    ?poses : PoseStamped[]
+        The goal position with intermediate waypoints
+
+    Output Parameters
+    -----------------
+    ?path : nav_msgs.msg.Path
+        The planned path
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner,
+                         ComputePathThroughPoses,
+                        'compute_path_through_poses',
+                        '?poses => ?path')
+
+    def on_tick(self) -> None:
+        self._goal_msg.goals = self._poses
+        self.set_status(NodeStatus.SUSPENDED)
+
+    def result_callback(self, future) -> None:
+        status = future.result().status
+
+        if(status == GoalStatus.STATUS_SUCCEEDED):
+            self._path = future.result().result.path
+            self.set_status(NodeStatus.SUCCESS)
+        elif(status == GoalStatus.STATUS_ABORTED):
+            # we can not distinguish between an abort due to a new goal (old goal aborted)
+            # and a real abort of a goal due to a failure in the processing
+            pass
         if(status == GoalStatus.STATUS_SUCCEEDED):
             self._path = future.result().result.path
             self.set_status(NodeStatus.SUCCESS)
@@ -135,8 +187,43 @@ class ComputePathToPoseActionRateLoop(RateControlNode):
 ########################################################################
 
 
+class ComputePathThroughPosesActionRateLoop(RateControlNode):
+    """Makes the `ComputePathThroughPosesAction` node running in a loop.
+
+    The `ComputePathThroughPosesActionRateLoop` makes the `ComputePathThroughPosesAction`
+    node running in a loop. As soon as the `ComputePathToPoseAction` node returns with
+    `SUCCESS` the status is set back to `RUNNING`.
+
+    Input Parameters
+    ----------------
+    ?poses : PoseStamped[]
+        The goal position with intermediate waypoints
+
+    Output Parameters
+    -----------------
+    ?path : nav_msgs.msg.Path
+        The planned path
+    """
+
+    def __init__(self, bt):
+        super().__init__(bt, 1000, '?poses => ?path')
+        self._poses = None
+        self._path = None
+        self.set_child(ComputePathThroughPosesAction, '?poses => ?path')
+
+        self.register_contingency_handler(ComputePathThroughPosesAction,
+                                          [NodeStatus.SUCCESS],
+                                          '.*',
+                                          self.handle_path_ok)
+
+    def handle_path_ok(self) -> None:
+        self.set_current_child_status(NodeStatus.RUNNING)
+
+########################################################################
+
+
 class FollowPathAction(RosActionClientActionNode):
-    """The `FollowPathAction` send the path to the ROS2 controller node.
+    """Send the path to the ROS2 controller node.
 
     Input Parameters
     ----------------
@@ -180,7 +267,7 @@ class FollowPathAction(RosActionClientActionNode):
 
 
 class ApproachPose(ParallelNode):
-    """The `ApproachPose` node is the main node to approch a goal position.
+    """Approch a goal position.
 
     It runs the two child nodes to compute the path and to follow this path in
     parallel. The current path is provided as output parameter, that it can be
@@ -203,4 +290,33 @@ class ApproachPose(ParallelNode):
 
     def on_init(self) -> None:
         self.add_child(ComputePathToPoseActionRateLoop, '?pose => ?path')
+        self.add_child(FollowPathAction, '?path')
+
+########################################################################
+
+
+class ApproachPoseThroughPoses(ParallelNode):
+    """Approch a goal position through intermediate waypoints.
+
+    It runs the two child nodes to compute the path and to follow this path in
+    parallel. The current path is provided as output parameter, that it can be
+    'analysed' while the node is executing by a parent node.
+
+    Input Parameters
+    ----------------
+    ?poses : PoseStamped[]
+        The goal position with intermediate waypoints
+
+    Output Parameters
+    -----------------
+    ?path : nav_msgs.msg.Path
+        The planned path
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner, 1, '?poses => ?path')
+        self._poses = None
+
+    def on_init(self) -> None:
+        self.add_child(ComputePathThroughPosesActionRateLoop, '?poses => ?path')
         self.add_child(FollowPathAction, '?path')
