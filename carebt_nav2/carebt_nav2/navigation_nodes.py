@@ -258,6 +258,8 @@ class CreateFollowPathFeedback(ActionNode):
         current_pose = get_current_pose(global_frame,
                                         robot_frame,
                                         self._tf_buffer)
+        if(current_pose is not None):
+            self._feedback.current_pose = current_pose
 
         # remaining path length
         if(self._path is not None and current_pose is not None):
