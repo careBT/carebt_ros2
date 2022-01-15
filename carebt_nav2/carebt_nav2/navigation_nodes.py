@@ -170,7 +170,8 @@ class FollowPathAction(RosActionClientActionNode):
         self.set_status(NodeStatus.RUNNING)
 
     def on_abort(self) -> None:
-        self._goal_handle.cancel_goal()
+        self.get_logger().info('{} - aborting...'.format(self.__class__.__name__))
+        self.get_goal_handle().cancel_goal()
 
     def result_callback(self, future) -> None:
         status = future.result().status
