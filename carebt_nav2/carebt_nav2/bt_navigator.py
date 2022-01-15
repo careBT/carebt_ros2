@@ -207,7 +207,6 @@ class FollowWaypointsSequence(RosActionServerSequenceNode):
         self._tf_buffer = Buffer()
         self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
         self._odom_smoother = bt_runner.odom_smoother
-        self._feedback_pub = bt_runner.node.create_publisher(NavigateToPose_FeedbackMessage, 'navigate_to_pose/_action/feedback', 10)
 
     def on_init(self) -> None:
         self.register_contingency_handler(ApproachPose,
