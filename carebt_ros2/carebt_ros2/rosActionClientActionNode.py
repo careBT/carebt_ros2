@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 from carebt.actionNode import ActionNode
 from carebt.nodeStatus import NodeStatus
 from rclpy.action import ActionClient
+from rclpy.action.client import ClientGoalHandle
 
 if TYPE_CHECKING:
     from carebt.behaviorTreeRunner import BehaviorTreeRunner  # pragma: no cover
@@ -32,6 +33,7 @@ class RosActionClientActionNode(ActionNode):
                  params: str = None):
         super().__init__(bt_runner, params)
         self.set_status(NodeStatus.IDLE)
+        self.__goal_handle = None
         self._goal_msg = action_type.Goal()
         self._action_client = ActionClient(bt_runner.node, action_type, action_name)
         self.get_logger().debug('{} - action_client.wait_for_server...'
@@ -43,14 +45,14 @@ class RosActionClientActionNode(ActionNode):
     # PRIVATE
 
     def __goal_response_callback(self, future):
-        goal_handle = future.result()
-        if not goal_handle.accepted:
+        self.__goal_handle = future.result()
+        if not self.__goal_handle.accepted:
             self.get_logger().debug('{} - Goal rejected'.format(self.__class__.__name__))
             return
 
         self.get_logger().debug('{} - Goal accepted'.format(self.__class__.__name__))
 
-        self._get_result_future = goal_handle.get_result_async()
+        self._get_result_future = self.__goal_handle.get_result_async()
         self._get_result_future.add_done_callback(self.result_callback)
 
     # PROTECTED
@@ -78,6 +80,9 @@ class RosActionClientActionNode(ActionNode):
                 self._goal_future.add_done_callback(self.__goal_response_callback)
 
     # PUBLIC
+
+    def get_goal_handle(self) -> ClientGoalHandle:
+        return self.__goal_handle
 
     def result_callback(self, future) -> None:
         pass
