@@ -14,7 +14,7 @@
 
 import math
 
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, PoseStamped, Twist
 from nav_msgs.msg import Path
 
 
@@ -61,3 +61,51 @@ def calculate_path_length(path: Path, start_index: int = 0) -> float:
     for idx in range(start_index, len(path.poses) - 1):
         path_length += euclidean_distance(path.poses[idx].pose, path.poses[idx+1].pose)
     return path_length
+
+
+def calculate_remaining_path_length(path: Path, pose: PoseStamped) -> float:
+    """Calculate the length of the provided path, starting at the provided pose.
+
+    Parameters
+    ----------
+    path: Path
+        The planned path with the poses
+    pose: PoseStamped
+        The pose to calculate the remaining path length from
+
+    Returns
+    -------
+    float
+        Path length
+    """
+    closest_pose_idx = 0
+    curr_min_dist = float('inf')
+    for idx, path_pose in enumerate(path.poses):
+        curr_dist = euclidean_distance(pose.pose, path_pose.pose)
+        if (curr_dist < curr_min_dist):
+            curr_min_dist = curr_dist
+            closest_pose_idx = idx
+    return calculate_path_length(path, closest_pose_idx)
+
+def calculate_travel_time(twist: Twist, path_length: float) -> int:
+    """Calculate the time to travel the path given the provided speed (twist).
+
+    Parameters
+    ----------
+    twist: Twist
+        The 'estimated' twist'
+    path_length: float
+        The path length
+
+    Returns
+    -------
+    int
+        Time
+    """
+    time = 0
+    current_linear_speed = math.hypot(twist.linear.x, twist.linear.y)
+    # Calculate estimated time taken to goal if speed is higher than 1cm/s
+    # and at least 10cm to go
+    if(abs(current_linear_speed) > 0.01 and path_length > 0.1):
+        time = int(path_length / abs(current_linear_speed))
+    return time
