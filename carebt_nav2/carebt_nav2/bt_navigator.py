@@ -19,6 +19,7 @@ from threading import Thread
 from carebt.abstractLogger import LogLevel
 from carebt.nodeStatus import NodeStatus
 from carebt.behaviorTreeRunner import BehaviorTreeRunner
+from carebt.parallelNode import ParallelNode
 from carebt_nav2.navigation_nodes import ApproachPose, ApproachPoseThroughPoses
 from carebt_nav2_pyutil.geometry_utils import calculate_remaining_path_length
 from carebt_nav2_pyutil.geometry_utils import calculate_travel_time
@@ -228,6 +229,17 @@ class ApproachPoseThroughPosesSequence(RosActionServerSequenceNode):
 
 ########################################################################
 
+class NavigatorNode(ParallelNode):
+    """Navigate to poses or through poses.
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner, 2, '')
+        self._pose = None
+
+    def on_init(self) -> None:
+        self.add_child(ApproachPoseSequence)
+        self.add_child(ApproachPoseThroughPosesSequence)
 
 class BtNode(Node, Thread):
 
@@ -240,8 +252,7 @@ class BtNode(Node, Thread):
         bt_runner.get_logger().set_log_level(LogLevel.INFO)
         bt_runner.node = self
         bt_runner.odom_smoother = OdomSmoother(self, 'odom', Duration(nanoseconds=500000000))
-        #bt_runner.run(ApproachPoseSequence)
-        bt_runner.run(ApproachPoseThroughPosesSequence)
+        bt_runner.run(NavigatorNode)
         rclpy.shutdown()
 
 ########################################################################

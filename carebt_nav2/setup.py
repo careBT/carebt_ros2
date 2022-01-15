@@ -20,8 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'bt_helloWorld = carebt_nav2.bt_helloWorld:main',
-            'bt_computePathToPose = carebt_nav2.bt_computePathToPose:main',
+            'carebt_helloWorld = carebt_nav2.bt_helloWorld:main',
+            'carebt_navigator = carebt_nav2.bt_navigator:main',
         ],
     },
 )
