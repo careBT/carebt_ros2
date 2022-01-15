@@ -23,9 +23,9 @@ def euclidean_distance(pos1: Pose, pos2: Pose) -> float:
 
     Parameters
     ----------
-    pos1: Pose
+    pos1: geometry_msgs.msg.Pose
         First pose
-    pos2: Pose
+    pos2: geometry_msgs.msg.Pose
         Second pose
 
     Returns
@@ -44,7 +44,7 @@ def calculate_path_length(path: Path, start_index: int = 0) -> float:
 
     Parameters
     ----------
-    path: Path
+    path: nav_msgs.msg.Path
         The planned path with the poses
     start_index: int = 0
         Optional argument specifying the starting index for the calculation of path length.
@@ -68,9 +68,9 @@ def calculate_remaining_path_length(path: Path, pose: PoseStamped) -> float:
 
     Parameters
     ----------
-    path: Path
+    path: nav_msgs.msg.Path
         The planned path with the poses
-    pose: PoseStamped
+    pose: geometry_msgs.msg.PoseStamped
         The pose to calculate the remaining path length from
 
     Returns
@@ -87,12 +87,13 @@ def calculate_remaining_path_length(path: Path, pose: PoseStamped) -> float:
             closest_pose_idx = idx
     return calculate_path_length(path, closest_pose_idx)
 
+
 def calculate_travel_time(twist: Twist, path_length: float) -> int:
     """Calculate the time to travel the path given the provided speed (twist).
 
     Parameters
     ----------
-    twist: Twist
+    twist: geometry_msgs.msg.Twist
         The 'estimated' twist'
     path_length: float
         The path length
