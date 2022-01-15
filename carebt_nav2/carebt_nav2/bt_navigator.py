@@ -25,6 +25,7 @@ from carebt_nav2_pyutil.geometry_utils import euclidean_distance
 from carebt_nav2_pyutil.robot_utils import get_current_pose
 from carebt_ros2.plugins.odom_smoother import OdomSmoother
 from carebt_ros2.rosActionServerSequenceNode import RosActionServerSequenceNode
+from nav2_msgs.action import FollowWaypoints
 from nav2_msgs.action import NavigateThroughPoses
 from nav2_msgs.action import NavigateToPose
 import rclpy
@@ -195,6 +196,66 @@ class ApproachPoseThroughPosesSequence(RosActionServerSequenceNode):
 
 ########################################################################
 
+
+class FollowWaypointsSequence(RosActionServerSequenceNode):
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner, FollowWaypoints, 'follow_waypoints')
+        self.set_throttle_ms(250)
+        self._goal_handle = None
+        self._start_time = None
+        self._tf_buffer = Buffer()
+        self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
+        self._odom_smoother = bt_runner.odom_smoother
+        self._feedback_pub = bt_runner.node.create_publisher(NavigateToPose_FeedbackMessage, 'navigate_to_pose/_action/feedback', 10)
+
+    def on_init(self) -> None:
+        self.register_contingency_handler(ApproachPose,
+                                          [NodeStatus.SUCCESS],
+                                          r'.*',
+                                          self.handle_goal_reached)
+        self.register_contingency_handler(ApproachPose,
+                                          [NodeStatus.ABORTED],
+                                          r'.*',
+                                          self.handle_aborted)
+        self.get_logger().info('{} - waiting for goals...'.format(self.__class__.__name__))
+
+    def execute_callback(self, goal_handle):
+        self._goal_handle = goal_handle
+        self._poses = goal_handle.request.poses
+        self.remove_all_children()
+        self.set_status(NodeStatus.RUNNING)
+        self._pose = self._poses[0]
+        for _ in self._poses:
+            self.append_child(ApproachPose, '?pose => ?feedback')
+        self._start_time = datetime.now()
+
+    def cancel_callback(self, goal_handle):
+        goal_handle.abort()
+        goal_handle.destroy()
+        self.abort_current_child()
+        self.get_logger().info('{} - goal canceled'.format(self.__class__.__name__))
+
+    def handle_goal_reached(self) -> None:
+        self._start_time = datetime.now()
+        del self._poses[0]
+        if(len(self._poses) > 0):
+            self._pose = self._poses[0]
+        else:
+            self.succeed()
+            self.set_status(NodeStatus.SUSPENDED)
+        self.get_logger().info('{} - goal reached.'.format(self.__class__.__name__))
+
+    def handle_aborted(self) -> None:
+        self.remove_all_children()
+        self.set_status(NodeStatus.SUSPENDED)
+        self.get_logger().info('{} - goal aborted. Waiting for new goals...'
+                               .format(self.__class__.__name__))
+
+
+########################################################################
+
+
 class NavigatorNode(ParallelNode):
     """Navigate to poses or through poses."""
 
@@ -205,6 +266,7 @@ class NavigatorNode(ParallelNode):
     def on_init(self) -> None:
         self.add_child(ApproachPoseSequence)
         self.add_child(ApproachPoseThroughPosesSequence)
+        self.add_child(FollowWaypointsSequence)
 
 ########################################################################
 
