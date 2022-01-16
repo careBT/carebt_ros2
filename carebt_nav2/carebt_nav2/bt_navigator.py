@@ -21,6 +21,8 @@ from carebt.nodeStatus import NodeStatus
 from carebt.parallelNode import ParallelNode
 from carebt_nav2.navigation_nodes import ApproachPose
 from carebt_nav2.navigation_nodes import ApproachPoseThroughPoses
+from carebt_nav2.utility_nodes import NoopAction
+from carebt_nav2.utility_nodes import WaitAction
 from carebt_nav2_pyutil.geometry_utils import euclidean_distance
 from carebt_nav2_pyutil.robot_utils import get_current_pose
 from carebt_ros2.plugins.odom_smoother import OdomSmoother
@@ -209,7 +211,7 @@ class FollowWaypointsSequence(RosActionServerSequenceNode):
         self._odom_smoother = bt_runner.odom_smoother
 
     def on_init(self) -> None:
-        self.register_contingency_handler(ApproachPose,
+        self.register_contingency_handler(NoopAction,
                                           [NodeStatus.SUCCESS],
                                           r'.*',
                                           self.handle_goal_reached)
@@ -228,13 +230,16 @@ class FollowWaypointsSequence(RosActionServerSequenceNode):
         self._current_waypoint = 0
         for _ in self._poses:
             self.append_child(ApproachPose, '?pose => ?feedback')
+            self.append_child(WaitAction, '2500')  # TODO: replace with other task execution node
+            self.append_child(NoopAction)
         self._start_time = datetime.now()
 
     def cancel_callback(self, goal_handle):
         goal_handle.abort()
         goal_handle.destroy()
         self.abort_current_child()
-        self.get_logger().info('{} - goal canceled'.format(self.__class__.__name__))
+        self.get_logger().info('{} - goal canceled. Waiting for new goals...'
+                               .format(self.__class__.__name__))
 
     def handle_goal_reached(self) -> None:
         self._start_time = datetime.now()
@@ -245,7 +250,8 @@ class FollowWaypointsSequence(RosActionServerSequenceNode):
         else:
             self.succeed()
             self.set_status(NodeStatus.SUSPENDED)
-        self.get_logger().info('{} - goal reached.'.format(self.__class__.__name__))
+        self.get_logger().info('{} - goal reached. Waiting for new goals...'
+                               .format(self.__class__.__name__))
 
     def handle_aborted(self) -> None:
         self.remove_all_children()
