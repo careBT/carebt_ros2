@@ -225,6 +225,7 @@ class FollowWaypointsSequence(RosActionServerSequenceNode):
         self.remove_all_children()
         self.set_status(NodeStatus.RUNNING)
         self._pose = self._poses[0]
+        self._current_waypoint = 0
         for _ in self._poses:
             self.append_child(ApproachPose, '?pose => ?feedback')
         self._start_time = datetime.now()
@@ -238,6 +239,7 @@ class FollowWaypointsSequence(RosActionServerSequenceNode):
     def handle_goal_reached(self) -> None:
         self._start_time = datetime.now()
         del self._poses[0]
+        self._current_waypoint += 1
         if(len(self._poses) > 0):
             self._pose = self._poses[0]
         else:
@@ -251,6 +253,14 @@ class FollowWaypointsSequence(RosActionServerSequenceNode):
         self.get_logger().info('{} - goal aborted. Waiting for new goals...'
                                .format(self.__class__.__name__))
 
+    def on_tick(self) -> None:
+        feedback_msg = FollowWaypoints.Feedback()
+
+        # set current_waypoint
+        feedback_msg.current_waypoint = self._current_waypoint
+
+        # send feedback
+        self._goal_handle.publish_feedback(feedback_msg)
 
 ########################################################################
 
