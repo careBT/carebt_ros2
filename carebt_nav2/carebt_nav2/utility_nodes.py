@@ -36,7 +36,8 @@ class WaitAction(ActionNode):
         super().__init__(bt_runner, '?time')
 
     def on_tick(self) -> None:
-        self.get_logger().info('{} - wait for {} milliseconds...'.format(self.__class__.__name__, self._time))
+        self.get_logger().info('{} - wait for {} milliseconds...'
+                               .format(self.__class__.__name__, self._time))
         self.set_status(NodeStatus.SUSPENDED)
         self.__done_timer = Timer(self._time / 1000, self.done_callback)
         self.__done_timer.start()
