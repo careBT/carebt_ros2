@@ -79,12 +79,12 @@ def calculate_remaining_path_length(path: Path, pose: PoseStamped) -> float:
         Path length
     """
     closest_pose_idx = 0
-    curr_min_dist = float('inf')
     for idx, path_pose in enumerate(path.poses):
         curr_dist = euclidean_distance(pose.pose, path_pose.pose)
-        if (curr_dist < curr_min_dist):
-            curr_min_dist = curr_dist
+        # TODO remove magic number 0.5
+        if (curr_dist < 0.5):
             closest_pose_idx = idx
+            break
     return calculate_path_length(path, closest_pose_idx)
 
 
