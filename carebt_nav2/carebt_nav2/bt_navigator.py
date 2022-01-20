@@ -178,7 +178,7 @@ class ApproachPoseThroughPosesSequence(RosActionServerSequenceNode):
                                         self._tf_buffer)
 
         # check if next intermediate waypoint has been passed
-        # TODO remove magic number
+        # TODO remove magic number 0.5
         if(len(self._poses) > 0
            and euclidean_distance(current_pose.pose, self._poses[0].pose) < 0.5):
             del self._poses[0]
