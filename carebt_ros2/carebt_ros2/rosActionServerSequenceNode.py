@@ -29,17 +29,17 @@ if TYPE_CHECKING:
 class RosActionServerSequenceNode(SequenceNode):
 
     def __init__(self,
-                 bt: 'BehaviorTreeRunner',
+                 bt_runner: 'BehaviorTreeRunner',
                  action_type,
                  action_name: str,
                  params: str = None):
-        super().__init__(bt, params)
+        super().__init__(bt_runner, params)
         self.__succeed = False
         self.__goal_handle = None
         self.__result = action_type.Result()
         self.__goal_lock = threading.Lock()
         self.__action_server = ActionServer(
-            bt.node,
+            bt_runner.node,
             action_type,
             action_name,
             callback_group=ReentrantCallbackGroup(),
