@@ -78,7 +78,10 @@ class ComputePathToPoseAction(RosActionClientActionNode):
 
     Input Parameters
     ----------------
-    ?pose : PoseStamped
+    ?start : geometry_msgs.msg.PoseStamped
+        The optional start position
+
+    ?goal : geometry_msgs.msg.PoseStamped
         The goal position
 
     Output Parameters
@@ -88,22 +91,22 @@ class ComputePathToPoseAction(RosActionClientActionNode):
     """
 
     def __init__(self, bt_runner):
-        super().__init__(bt_runner, ComputePathToPose, 'compute_path_to_pose', '?pose => ?path')
+        super().__init__(bt_runner, ComputePathToPose, 'compute_path_to_pose',
+                         '?start ?goal => ?path')
 
     def on_tick(self) -> None:
-        self._goal_msg.goal = self._pose
+        if(self._start is not None):
+            self._goal_msg.start = self._start
+            self._goal_msg.use_start = True
+        else:
+            self._goal_msg.use_start = False
+        self._goal_msg.goal = self._goal
+        self._goal_msg.planner_id = ''  # TODO: select planner from kb
         self.set_status(NodeStatus.SUSPENDED)
 
     def result_callback(self, future) -> None:
         status = future.result().status
 
-        if(status == GoalStatus.STATUS_SUCCEEDED):
-            self._path = future.result().result.path
-            self.set_status(NodeStatus.SUCCESS)
-        elif(status == GoalStatus.STATUS_ABORTED):
-            # we can not distinguish between an abort due to a new goal (old goal aborted)
-            # and a real abort of a goal due to a failure in the processing
-            pass
         if(status == GoalStatus.STATUS_SUCCEEDED):
             self._path = future.result().result.path
             self.set_status(NodeStatus.SUCCESS)
@@ -120,7 +123,10 @@ class ComputePathThroughPosesAction(RosActionClientActionNode):
 
     Input Parameters
     ----------------
-    ?poses : PoseStamped[]
+    ?start : geometry_msgs.msg.PoseStamped
+        The optional start position
+
+    ?goals : geometry_msgs.msg.PoseStamped[]
         The goal position with intermediate waypoints
 
     Output Parameters
@@ -131,22 +137,21 @@ class ComputePathThroughPosesAction(RosActionClientActionNode):
 
     def __init__(self, bt_runner):
         super().__init__(bt_runner, ComputePathThroughPoses,
-                         'compute_path_through_poses', '?poses => ?path')
+                         'compute_path_through_poses', '?start ?goals => ?path')
 
     def on_tick(self) -> None:
-        self._goal_msg.goals = self._poses
+        if(self._start is not None):
+            self._goal_msg.start = self._start
+            self._goal_msg.use_start = True
+        else:
+            self._goal_msg.use_start = False
+        self._goal_msg.goals = self._goals
+        self._goal_msg.planner_id = ''  # TODO: select planner from kb
         self.set_status(NodeStatus.SUSPENDED)
 
     def result_callback(self, future) -> None:
         status = future.result().status
 
-        if(status == GoalStatus.STATUS_SUCCEEDED):
-            self._path = future.result().result.path
-            self.set_status(NodeStatus.SUCCESS)
-        elif(status == GoalStatus.STATUS_ABORTED):
-            # we can not distinguish between an abort due to a new goal (old goal aborted)
-            # and a real abort of a goal due to a failure in the processing
-            pass
         if(status == GoalStatus.STATUS_SUCCEEDED):
             self._path = future.result().result.path
             self.set_status(NodeStatus.SUCCESS)
@@ -167,7 +172,10 @@ class ComputePathToPoseActionRateLoop(RateControlNode):
 
     Input Parameters
     ----------------
-    ?pose : PoseStamped
+    ?start : geometry_msgs.msg.PoseStamped
+        The optional start position
+
+    ?goal : geometry_msgs.msg.PoseStamped
         The goal position
 
     Output Parameters
@@ -177,10 +185,10 @@ class ComputePathToPoseActionRateLoop(RateControlNode):
     """
 
     def __init__(self, bt):
-        super().__init__(bt, 1000, '?pose => ?path')
+        super().__init__(bt, 1000, '?start ?goal => ?path')
         self._pose = None
         self._path = None
-        self.set_child(ComputePathToPoseAction, '?pose => ?path')
+        self.set_child(ComputePathToPoseAction, '?start ?goal => ?path')
 
         self.register_contingency_handler(ComputePathToPoseAction,
                                           [NodeStatus.SUCCESS],
@@ -203,7 +211,10 @@ class ComputePathThroughPosesActionRateLoop(RateControlNode):
 
     Input Parameters
     ----------------
-    ?poses : PoseStamped[]
+    ?start : geometry_msgs.msg.PoseStamped
+        The optional start position
+
+    ?goals : geometry_msgs.msg.PoseStamped[]
         The goal position with intermediate waypoints
 
     Output Parameters
@@ -213,10 +224,10 @@ class ComputePathThroughPosesActionRateLoop(RateControlNode):
     """
 
     def __init__(self, bt):
-        super().__init__(bt, 1000, '?poses => ?path')
+        super().__init__(bt, 1000, '?start ?goals => ?path')
         self._poses = None
         self._path = None
-        self.set_child(ComputePathThroughPosesAction, '?poses => ?path')
+        self.set_child(ComputePathThroughPosesAction, '?start ?goals => ?path')
 
         self.register_contingency_handler(ComputePathThroughPosesAction,
                                           [NodeStatus.SUCCESS],
@@ -334,7 +345,7 @@ class ApproachPose(ParallelNode):
 
     Input Parameters
     ----------------
-    ?pose : PoseStamped
+    ?goal : geometry_msgs.msg.PoseStamped
         The goal position
 
     Output Parameters
@@ -344,11 +355,11 @@ class ApproachPose(ParallelNode):
     """
 
     def __init__(self, bt_runner):
-        super().__init__(bt_runner, 1, '?pose => ?feedback')
+        super().__init__(bt_runner, 1, '?goal => ?feedback')
         self._pose = None
 
     def on_init(self) -> None:
-        self.add_child(ComputePathToPoseActionRateLoop, '?pose => ?path')
+        self.add_child(ComputePathToPoseActionRateLoop, 'None ?goal => ?path')
         self.add_child(FollowPathAction, '?path')
         self.add_child(CreateFollowPathFeedback, '?path => ?feedback')
 
@@ -364,7 +375,7 @@ class ApproachPoseThroughPoses(ParallelNode):
 
     Input Parameters
     ----------------
-    ?poses : PoseStamped[]
+    ?goals : geometry_msgs.msg.PoseStamped[]
         The goal position with intermediate waypoints
 
     Output Parameters
@@ -374,10 +385,10 @@ class ApproachPoseThroughPoses(ParallelNode):
     """
 
     def __init__(self, bt_runner):
-        super().__init__(bt_runner, 1, '?poses => ?feedback')
+        super().__init__(bt_runner, 1, '?goals => ?feedback')
         self._poses = None
 
     def on_init(self) -> None:
-        self.add_child(ComputePathThroughPosesActionRateLoop, '?poses => ?path')
+        self.add_child(ComputePathThroughPosesActionRateLoop, 'None ?goals => ?path')
         self.add_child(FollowPathAction, '?path')
         self.add_child(CreateFollowPathFeedback, '?path => ?feedback')
