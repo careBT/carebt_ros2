@@ -20,22 +20,6 @@ from carebt.nodeStatus import NodeStatus
 ########################################################################
 
 
-class NoopAction(ActionNode):
-    """Do nothing node.
-
-    Do nothing and immediately return with `SUCCESS`.
-
-    """
-
-    def __init__(self, bt_runner):
-        super().__init__(bt_runner, '')
-
-    def on_tick(self) -> None:
-        self.set_status(NodeStatus.SUCCESS)
-
-########################################################################
-
-
 class WaitAction(ActionNode):
     """Wait until time has elapsed.
 
