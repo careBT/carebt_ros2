@@ -16,6 +16,8 @@ from threading import Timer
 
 from carebt.actionNode import ActionNode
 from carebt.nodeStatus import NodeStatus
+from carebt_ros2.rosSubscriberActionNode import RosSubscriberActionNode
+from std_msgs.msg import Empty
 
 ########################################################################
 
@@ -54,3 +56,21 @@ class WaitAction(ActionNode):
         # set the timer to None to make sure that all references (bound method)
         # are released and the object gets destroyed by gc
         self.__done_timer = None
+
+########################################################################
+
+
+class WaitForUserInput(RosSubscriberActionNode):
+    """Wait for an user input.
+
+    Waits until an user input has been received.
+
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner, Empty, 'wait_at_waypoint', '')
+        self.get_logger().info('{} - wait for user input...'.format(self.__class__.__name__))
+
+    def topic_callback(self, msg) -> None:
+        self.get_logger().info('{} - user input received.'.format(self.__class__.__name__))
+        self.set_status(NodeStatus.SUCCESS)

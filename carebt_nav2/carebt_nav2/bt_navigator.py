@@ -22,6 +22,7 @@ from carebt.parallelNode import ParallelNode
 from carebt_nav2.navigation_nodes import ApproachPose
 from carebt_nav2.navigation_nodes import ApproachPoseThroughPoses
 from carebt_nav2.utility_nodes import WaitAction
+from carebt_nav2.utility_nodes import WaitForUserInput
 from carebt_nav2_pyutil.geometry_utils import euclidean_distance
 from carebt_nav2_pyutil.robot_utils import get_current_pose
 from carebt_ros2.plugins.odom_smoother import OdomSmoother
@@ -210,7 +211,7 @@ class FollowWaypointsSequence(RosActionServerSequenceNode):
         self._odom_smoother = bt_runner.odom_smoother
 
     def on_init(self) -> None:
-        self.register_contingency_handler(WaitAction,
+        self.register_contingency_handler(r'^ApproachPose',  # all children expect ApproachPose
                                           [NodeStatus.SUCCESS],
                                           r'.*',
                                           self.handle_goal_reached)
@@ -229,7 +230,9 @@ class FollowWaypointsSequence(RosActionServerSequenceNode):
         self._current_waypoint = 0
         for _ in self._poses:
             self.append_child(ApproachPose, '?pose => ?feedback')
-            self.append_child(WaitAction, '2500')  # TODO: replace with other task execution node
+            # TODO: replace with other task execution node
+            # self.append_child(WaitAction, '2500')
+            self.append_child(WaitForUserInput)
         self._start_time = datetime.now()
 
     def cancel_callback(self, goal_handle):
