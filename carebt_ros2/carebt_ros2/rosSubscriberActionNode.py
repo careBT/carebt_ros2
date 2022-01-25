@@ -1,4 +1,4 @@
-# Copyright 2021 Andreas Steck (steck.andi@gmail.com)
+# Copyright 2022 Andreas Steck (steck.andi@gmail.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import threading
-from time import sleep
 from typing import TYPE_CHECKING
 
 from carebt.actionNode import ActionNode
@@ -32,7 +30,7 @@ class RosSubscriberActionNode(ActionNode):
                  topic_name: str,
                  params: str = None):
         super().__init__(bt_runner, params)
-        self.__subscriber = self.subscription = bt_runner.node.create_subscription(
+        self.__subscriber = bt_runner.node.create_subscription(
             topic_type,
             topic_name,
             self.__topic_callback,
