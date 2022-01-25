@@ -16,7 +16,7 @@ import sys
 
 from carebt_msgs.srv import TellAsk
 from rclpy.node import Node
-from tinydb import *
+import tinydb
 
 
 class Kb():
@@ -27,7 +27,7 @@ class Kb():
 
         # create tinydb
         self.get_logger().info('create tinydb kb from file: {}'.format(kbfile))
-        self._kb = TinyDB(kbfile)
+        self._kb = tinydb.TinyDB(kbfile)
 
         node.create_service(TellAsk, 'kb_tellask', self.query_callback)
 
@@ -43,5 +43,5 @@ class Kb():
             response.result = str(sys.exc_info()[0])
         return response
 
-    def get_kb(self) -> TinyDB:
+    def get_kb(self) -> tinydb.TinyDB:
         return self._kb
