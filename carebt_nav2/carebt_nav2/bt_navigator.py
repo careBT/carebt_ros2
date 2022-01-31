@@ -211,7 +211,7 @@ class FollowWaypointsSequence(RosActionServerSequenceNode):
         self._odom_smoother = bt_runner.odom_smoother
 
     def on_init(self) -> None:
-        self.register_contingency_handler(r'^ApproachPose',  # all children expect ApproachPose
+        self.register_contingency_handler(r'^ApproachPose',  # all children except ApproachPose
                                           [NodeStatus.SUCCESS],
                                           r'.*',
                                           self.handle_goal_reached)
