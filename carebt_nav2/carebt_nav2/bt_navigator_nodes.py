@@ -202,7 +202,6 @@ class FollowWaypointsSequence(RosActionServerSequenceNode):
         self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
         self._odom_smoother = bt_runner.odom_smoother
         self.__ros_node = bt_runner.node
-        self.__ros_node.declare_parameter('waypoint_action', 'WaitAction')
 
     def on_init(self) -> None:
         self.register_contingency_handler(r'^(?!ApproachPose)',  # all children except ApproachPose

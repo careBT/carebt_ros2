@@ -27,6 +27,8 @@ def main():
     rosCarebtRunner.get_bt_runner().odom_smoother = OdomSmoother(rosCarebtRunner,
                                                                  'odom',
                                                                  Duration(nanoseconds=500000000))
+    rosCarebtRunner.declare_parameter('waypoint_action', 'WaitAction')
+
     rosCarebtRunner.run(NavigatorNode)
 
 

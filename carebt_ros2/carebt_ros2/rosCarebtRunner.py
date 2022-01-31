@@ -27,7 +27,7 @@ from rclpy.node import Node
 class BtNode(Thread):
 
     def __init__(self, ros_node: Node):
-        Thread.__init__(self, target=self.thread)
+        Thread.__init__(self, target=self.thread, daemon=True)
         self.__ros_node = ros_node
 
         # Use a MultiThreadedExecutor to enable processing goals concurrently
