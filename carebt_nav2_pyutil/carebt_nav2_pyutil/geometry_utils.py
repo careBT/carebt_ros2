@@ -19,7 +19,8 @@ from nav_msgs.msg import Path
 
 
 def euclidean_distance(pos1: Pose, pos2: Pose) -> float:
-    """Get the L2 distance between 2 geometry_msgs::Poses.
+    """
+    Get the L2 distance between 2 geometry_msgs::Poses.
 
     Parameters
     ----------
@@ -32,6 +33,7 @@ def euclidean_distance(pos1: Pose, pos2: Pose) -> float:
     -------
     float
         L2 distance
+
     """
     dx = pos1.position.x - pos2.position.x
     dy = pos1.position.y - pos2.position.y
@@ -40,7 +42,8 @@ def euclidean_distance(pos1: Pose, pos2: Pose) -> float:
 
 
 def calculate_path_length(path: Path, start_index: int = 0) -> float:
-    """Calculate the length of the provided path, starting at the provided index.
+    """
+    Calculate the length of the provided path, starting at the provided index.
 
     Parameters
     ----------
@@ -54,6 +57,7 @@ def calculate_path_length(path: Path, start_index: int = 0) -> float:
     -------
     float
         Path length
+
     """
     if(start_index + 1 >= len(path.poses)):
         return 0.0
@@ -64,7 +68,8 @@ def calculate_path_length(path: Path, start_index: int = 0) -> float:
 
 
 def calculate_remaining_path_length(path: Path, pose: PoseStamped) -> float:
-    """Calculate the length of the provided path, starting at the provided pose.
+    """
+    Calculate the length of the provided path, starting at the provided pose.
 
     Parameters
     ----------
@@ -77,6 +82,7 @@ def calculate_remaining_path_length(path: Path, pose: PoseStamped) -> float:
     -------
     float
         Path length
+
     """
     closest_pose_idx = 0
     for idx, path_pose in enumerate(path.poses):
@@ -89,7 +95,8 @@ def calculate_remaining_path_length(path: Path, pose: PoseStamped) -> float:
 
 
 def calculate_travel_time(twist: Twist, path_length: float) -> int:
-    """Calculate the time to travel the path given the provided speed (twist).
+    """
+    Calculate the time to travel the path given the provided speed (twist).
 
     Parameters
     ----------
@@ -102,6 +109,7 @@ def calculate_travel_time(twist: Twist, path_length: float) -> int:
     -------
     int
         Time
+
     """
     time = 0
     current_linear_speed = math.hypot(twist.linear.x, twist.linear.y)

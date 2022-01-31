@@ -21,7 +21,8 @@ from tf2_ros.buffer import Buffer
 def get_current_pose(global_frame: str,
                      robot_frame: str,
                      tf: Buffer) -> PoseStamped:
-    """Get the current pose of the robot.
+    """
+    Get the current pose of the robot.
 
     Parameters
     ----------
@@ -36,6 +37,7 @@ def get_current_pose(global_frame: str,
     -------
     PoseStamped
         Current pose of the robot.
+
     """
     trans = None
     now = rclpy.time.Time()
