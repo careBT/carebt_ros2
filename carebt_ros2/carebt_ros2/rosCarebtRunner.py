@@ -35,7 +35,7 @@ class BtNode(Thread):
         self.__bt_runner = BehaviorTreeRunner()
 
     def thread(self):
-        rclpy.spin( self.__ros_node, executor=self.__executor)
+        rclpy.spin(self.__ros_node, executor=self.__executor)
 
     def run_node(self, node: TreeNode, params: str = None):
         self.__bt_runner.get_logger().set_log_level(LogLevel.INFO)
@@ -50,12 +50,13 @@ class RosCarebtRunner(Node):
     def __init__(self):
         rclpy.init(args=None)
         Node.__init__(self, 'carebt_runner')
-        
+
         self.__btNode = BtNode(self)
         self.__btNode.start()
 
     def run(self, node: TreeNode, params: str = None) -> None:
-        """Execute the provided node, respectively the provided behavior tree.
+        """
+        Execute the provided node, respectively the provided behavior tree.
 
         Parameters
         ----------
@@ -63,5 +64,6 @@ class RosCarebtRunner(Node):
             The node which should be executed
         params: str, optional
             The parameters for the node which should be executed
+
         """
         self.__btNode.run_node(node, params)

@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from carebt_ros2.plugins.kb_tinydb import Kb
+from carebt_ros2.plugins.odom_smoother import OdomSmoother
 from carebt_ros2.rosActionClientActionNode import RosActionClientActionNode
 from carebt_ros2.rosActionServerSequenceNode import RosActionServerSequenceNode
 from carebt_ros2.rosCarebtRunner import RosCarebtRunner
 from carebt_ros2.rosSubscriberActionNode import RosSubscriberActionNode
-
-from carebt_ros2.plugins.kb_tinydb import Kb
-from carebt_ros2.plugins.odom_smoother import OdomSmoother
 
 __all__ = ['RosActionClientActionNode',
            'RosActionServerSequenceNode',
