@@ -7,7 +7,11 @@
   <maintainer email="steck.andi@gmail.com">Andreas Steck</maintainer>
   <license>Apache License 2.0</license>
 
-  <exec_depend>rclpy</exec_depend>
+  <depend>carebt</depend>
+  <depend>carebt_msgs</depend>
+  <depend>nav2_msgs</depend>
+  <depend>rclpy</depend>
+  <depend>tinydb</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
