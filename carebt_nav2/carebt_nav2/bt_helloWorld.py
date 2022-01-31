@@ -12,15 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from threading import Thread
 
-from carebt.abstractLogger import LogLevel
-from carebt.actionNode import ActionNode
-from carebt.behaviorTreeRunner import BehaviorTreeRunner
-from carebt.nodeStatus import NodeStatus
-import rclpy
-from rclpy.executors import MultiThreadedExecutor
-from rclpy.node import Node
+from carebt import ActionNode
+from carebt import NodeStatus
+from carebt_ros2 import RosCarebtRunner
 
 
 class HelloWorldAction(ActionNode):
@@ -36,32 +31,9 @@ class HelloWorldAction(ActionNode):
 ########################################################################
 
 
-class BtNode(Node, Thread):
-
-    def __init__(self):
-        Node.__init__(self, 'hello_world')
-        Thread.__init__(self)
-
-    def run(self):
-        bt_runner = BehaviorTreeRunner()
-        bt_runner.get_logger().set_log_level(LogLevel.INFO)
-        bt_runner.node = self
-        bt_runner.run(HelloWorldAction)
-        rclpy.shutdown()
-
-########################################################################
-
-
-def main(args=None):
-    rclpy.init(args=args)
-
-    # Use a MultiThreadedExecutor to enable processing goals concurrently
-    executor = MultiThreadedExecutor()
-
-    btNode = BtNode()
-    btNode.start()
-
-    rclpy.spin(btNode, executor=executor)
+def main():
+    rosCarebtRunner = RosCarebtRunner()
+    rosCarebtRunner.run(HelloWorldAction)
 
 
 if __name__ == '__main__':
