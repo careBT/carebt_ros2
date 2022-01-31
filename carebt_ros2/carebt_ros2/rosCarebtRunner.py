@@ -27,7 +27,7 @@ from rclpy.node import Node
 class BtNode(Thread):
 
     def __init__(self, ros_node: Node):
-        Thread.__init__(self)
+        Thread.__init__(self, target=self.thread)
         self.__ros_node = ros_node
 
         # Use a MultiThreadedExecutor to enable processing goals concurrently
@@ -39,17 +39,20 @@ class BtNode(Thread):
 
     def run_node(self, node: TreeNode, params: str = None):
         self.__bt_runner.get_logger().set_log_level(LogLevel.INFO)
-        self.__bt_runner.node = self
+        self.__bt_runner.node = self.__ros_node
         self.__bt_runner.run(node, params)
+
+    def get_bt_runner(self) -> BehaviorTreeRunner:
+        return self.__bt_runner
 
 ########################################################################
 
 
 class RosCarebtRunner(Node):
 
-    def __init__(self):
+    def __init__(self, node_name: str = 'carebt_runner'):
         rclpy.init(args=None)
-        Node.__init__(self, 'carebt_runner')
+        Node.__init__(self, node_name)
 
         self.__btNode = BtNode(self)
         self.__btNode.start()
@@ -67,3 +70,6 @@ class RosCarebtRunner(Node):
 
         """
         self.__btNode.run_node(node, params)
+
+    def get_bt_runner(self) -> BehaviorTreeRunner:
+        return self.__btNode.get_bt_runner()
