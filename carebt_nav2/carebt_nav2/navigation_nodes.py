@@ -54,8 +54,11 @@ class InitPoseAction(ActionNode):
                                                                 10)
 
     def on_tick(self) -> None:
+        self.get_logger().info('{} - set initial pose to (x, y): ({:.2f}, {:.2f})'
+                               .format(self.__class__.__name__,
+                                       self._initial_pose.pose.pose.position.x,
+                                       self._initial_pose.pose.pose.position.y))
         self._initialpose_pub.publish(self._initial_pose)
-
         self.set_status(NodeStatus.SUCCESS)
 
 ########################################################################
