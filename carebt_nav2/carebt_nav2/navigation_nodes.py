@@ -23,7 +23,6 @@ from carebt_nav2_pyutil.geometry_utils import calculate_remaining_path_length
 from carebt_nav2_pyutil.geometry_utils import calculate_travel_time
 from carebt_nav2_pyutil.robot_utils import get_current_pose
 from carebt_ros2.rosActionClientActionNode import RosActionClientActionNode
-from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav2_msgs.action import ComputePathThroughPoses
 from nav2_msgs.action import ComputePathToPose
@@ -31,45 +30,6 @@ from nav2_msgs.action import FollowPath
 from nav2_msgs.action import NavigateToPose
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-
-########################################################################
-
-
-class CreatePose(ActionNode):
-    """Returns a PoseStamped.
-
-    The `CreatePose` node returns a PoseStamped corresponding to
-    the provided ?x and ?y coordinates. This node is just for
-    testing purposes.
-
-    Input Parameters
-    ----------------
-    ?x : int
-        The x coordinate
-    ?y : int
-        The y coordinate
-
-    Output Parameters
-    -----------------
-    ?pose : geometry_msgs.msg.PoseStamped
-        The pose corresponding to ?x and ?y
-    """
-
-    def __init__(self, bt_runner):
-        super().__init__(bt_runner, '?x ?y => ?pose')
-
-    def on_init(self) -> None:
-        self._pose = PoseStamped()
-        self._pose.pose.position.x = float(self._x)
-        self._pose.pose.position.y = float(self._y)
-        self._pose.pose.position.z = 0.0
-        self._pose.pose.orientation.x = 0.0
-        self._pose.pose.orientation.y = 0.0
-        self._pose.pose.orientation.z = 0.0
-        self._pose.pose.orientation.w = 1.0
-        self._pose.header.frame_id = 'map'
-
-        self.set_status(NodeStatus.SUCCESS)
 
 ########################################################################
 
