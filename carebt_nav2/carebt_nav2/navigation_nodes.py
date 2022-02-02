@@ -24,6 +24,7 @@ from carebt_nav2_pyutil.geometry_utils import calculate_travel_time
 from carebt_nav2_pyutil.robot_utils import get_current_pose
 from carebt_ros2.rosActionClientActionNode import RosActionClientActionNode
 from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav2_msgs.action import ComputePathThroughPoses
 from nav2_msgs.action import ComputePathToPose
 from nav2_msgs.action import FollowPath
@@ -67,6 +68,33 @@ class CreatePose(ActionNode):
         self._pose.pose.orientation.z = 0.0
         self._pose.pose.orientation.w = 1.0
         self._pose.header.frame_id = 'map'
+
+        self.set_status(NodeStatus.SUCCESS)
+
+########################################################################
+
+
+class InitPoseAction(ActionNode):
+    """Publishes the current pose of the robot.
+
+    Publishes the current pose of the robot to the '/initialpose' topic. This pose is used
+    by the localization component.
+
+    Input Parameters
+    ----------------
+    ?pose : geometry_msgs.msg.PoseWithCovarianceStamped
+        The current pose
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner, '?initial_pose')
+        self._initial_pose = PoseWithCovarianceStamped()
+        self._initialpose_pub = bt_runner.node.create_publisher(PoseWithCovarianceStamped,
+                                                                '/initialpose',
+                                                                10)
+
+    def on_tick(self) -> None:
+        self._initialpose_pub.publish(self._initial_pose)
 
         self.set_status(NodeStatus.SUCCESS)
 
