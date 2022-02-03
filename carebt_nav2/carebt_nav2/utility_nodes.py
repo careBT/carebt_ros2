@@ -22,6 +22,23 @@ from std_msgs.msg import Empty
 ########################################################################
 
 
+class NoopAction(ActionNode):
+    """A noop action node.
+
+    Noop node  which can, for example, be used to register a contingency
+    handler on to trigger a callback function.
+
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner)
+
+    def on_tick(self) -> None:
+        self.set_status(NodeStatus.SUCCESS)
+
+########################################################################
+
+
 class WaitAction(ActionNode):
     """Wait until time has elapsed.
 
