@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'carebt_nav2'
+package_name = 'carebt_navigator'
 
 setup(
     name=package_name,
@@ -15,11 +15,12 @@ setup(
     zip_safe=True,
     maintainer='Andreas Steck',
     maintainer_email='steck.andi@gmail.com',
-    description='CareBT nodes for the Navigation2 stack.',
+    description='CareBT navigator demo.',
     license='Apache License 2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'carebt_navigator = carebt_navigator.bt_navigator:main',
         ],
     },
 )

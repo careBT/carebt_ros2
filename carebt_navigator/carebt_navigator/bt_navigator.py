@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from carebt import LogLevel
-from carebt_nav2.bt_navigator_nodes import NavigatorNode
+from carebt_navigator.bt_navigator_nodes import NavigatorNode
 from carebt_ros2 import RosCarebtRunner
 from carebt_ros2.plugins.odom_smoother import OdomSmoother
 from rclpy.duration import Duration
