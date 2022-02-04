@@ -14,7 +14,7 @@
 
 import sys
 
-from carebt_msgs.srv import TellAsk
+from carebt_msgs.srv import RequestResponse
 from rclpy.node import Node
 import tinydb
 
@@ -29,18 +29,16 @@ class Kb():
         self.get_logger().info('create tinydb kb from file: {}'.format(kbfile))
         self._kb = tinydb.TinyDB(kbfile)
 
-        node.create_service(TellAsk, 'kb_tellask', self.query_callback)
+        node.create_service(RequestResponse, 'kb_tellask', self.query_callback)
 
-    def query_callback(self, request, response):
+    def query_callback(self, request: RequestResponse.Request, response: RequestResponse.Response):
         self.get_logger().info('request: {}'.format(request.request))
         try:
-            exec('response.result = str(self._kb.{})'.format(request.request))
-            response.success = True
-            self.get_logger().info('result: {}'.format(response.result))
+            exec('response.response = str(self._kb.{})'.format(request.request))
+            self.get_logger().info('result: {}'.format(response.response))
         except (AttributeError, RuntimeError) as err:
-            self.get_logger().error('an error occured: {}\n{}'.format(str(sys.exc_info()[0]), err))
-            response.success = False
-            response.result = str(sys.exc_info()[0])
+            self.get_logger().error('an error occurred: {}\n{}'.format(str(sys.exc_info()[0]), err))
+            response.response = str(sys.exc_info()[0])
         return response
 
     def get_kb(self) -> tinydb.TinyDB:
