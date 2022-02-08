@@ -11,7 +11,6 @@
   <depend>carebt_msgs</depend>
   <depend>nav2_msgs</depend>
   <depend>rclpy</depend>
-  <depend>tinydb</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
