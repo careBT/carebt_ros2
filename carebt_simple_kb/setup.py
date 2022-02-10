@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'carebt_simpleKb'
+package_name = 'carebt_simple_kb'
 
 setup(
     name=package_name,
@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'carebt_simpleKb = carebt_simpleKb.carebt_simpleKb:main'
+            'carebt_simple_kb = carebt_simple_kb.carebt_simple_kb:main'
         ],
     },
 )

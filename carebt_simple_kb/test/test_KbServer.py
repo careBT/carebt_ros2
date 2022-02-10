@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from carebt_msgs.srv import RequestResponse
-from carebt_simpleKb.carebt_simpleKb import KbServer
+from carebt_simple_kb.carebt_simple_kb import KbServer
 from geometry_msgs.msg import PoseStamped
 import json
 import math
@@ -56,7 +56,28 @@ class TestKbServer():
         result = kbserver.query_callback(req, res)
         result = json.loads(result.response)
         
-        assert len(result) == 0   
+        assert len(result) == 0 
+
+    def test_update_age_of_bob(self, execute_before_any_test):
+        kbserver = KbServer()
+        req = RequestResponse.Request()
+        res = RequestResponse.Response()
+    
+        req.operation = 'UPDATE'
+        filter = {'is-a': 'Person', 'name': 'Bob'}
+        data = {'age': 55}
+        req.operation = 'UPDATE'
+        req.filter = json.dumps(filter)
+        req.data = json.dumps(data)
+
+        result = kbserver.query_callback(req, res)
+        result = json.loads(result.response)
+
+        assert len(result) == 1
+        assert len(result[0]) == 3
+        assert result[0]['is-a'] == 'Person'
+        assert result[0]['name'] == 'Bob'
+        assert result[0]['age'] == 55
 
     def test_update_add_pose_to_bob(self, execute_before_any_test):
         kbserver = KbServer()
@@ -81,6 +102,7 @@ class TestKbServer():
             'geometry_msgs/msg/PoseStamped', result[0]['pose'])
 
         assert len(result) == 1
+        assert len(result[0]) == 4
         assert math.isclose(result[0]['pose']['pose']['position']['x'], 1.0)
         assert math.isclose(result[0]['pose']['pose']['position']['y'], 2.0)
         assert math.isclose(p.pose.position.x, 1.0)

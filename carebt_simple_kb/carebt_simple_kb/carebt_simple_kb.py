@@ -83,12 +83,12 @@ class Kb():
 class KbServer(Node):
 
     def __init__(self):
-        super().__init__('carebt_simplekb')
+        super().__init__('carebt_simple_kb')
         # TODO
-        self.__kb = Kb('src/carebt_ros2/carebt_simplekb/test/data/memory.json')
+        self.__kb = Kb('src/carebt_ros2/carebt_simple_kb/test/data/memory.json')
 
         # create ports
-        self.srv = self.create_service(RequestResponse, 'query', self.query_callback)
+        self.srv = self.create_service(RequestResponse, 'crud', self.query_callback)
 
     def query_callback(self, request: RequestResponse.Request, response: RequestResponse.Response):
         self.get_logger().info(f'Incoming request: {request.operation} {request.filter} {request.data}')
