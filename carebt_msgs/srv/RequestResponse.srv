@@ -1,3 +1,5 @@
-string request
+string operation
+string filter
+string data
 ---
 string response
