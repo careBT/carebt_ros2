@@ -39,7 +39,7 @@ class KbServer(Node):
         # create SimpleKb
         self.get_logger().info(f'create kb from file: {kb_file}, persist = {kb_persist}')
         self.__simple_kb = SimpleKb(kb_file, kb_persist)
-        self.get_logger().info(f'kb created with {self.__simple_kb.size_in_kb()} bytes; '
+        self.get_logger().info(f'kb created with {self.__simple_kb.size()} bytes; '
             + f'{self.__simple_kb.count()} entries')
 
         # create ports

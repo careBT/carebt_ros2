@@ -117,7 +117,7 @@ class TestSimpleKb():
         result = kb.read({'is-a': 'Person', 'name': 'Alice', 'age': 99})
         assert len(result) == 1
 
-    def test_show(self):
+    def test_print(self):
         kb = SimpleKb('src/carebt_ros2/carebt_simple_kb/test/data/memory.json')
         print("KB entries")
-        kb.show()
+        kb.print()

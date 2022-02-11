@@ -48,18 +48,51 @@ class SimpleKb():
 
     # PUBLIC
 
-    def create(self, entry):
-        self.__kb_dict[str(get_uuid())] = entry
+    def create(self, item) -> None:
+        """
+        Create the item in the knowledge base.
+
+        Parameters
+        ----------
+        item: dict
+            Item to create
+        """
+        self.__kb_dict[str(get_uuid())] = item
         self.__save(self.__sync_to_file)
 
     def read(self, filter):
-        entries = []
+        """
+        Read the items matching the filter.
+
+        Parameters
+        ----------
+        filter: dict
+            Filter for the items to search
+
+        Returns
+        -------
+        [dict]
+            A list of items
+
+        """
+        items = []
         uuids = self.__get_uuids(filter)
         for uuid in uuids:
-            entries.append(self.__kb_dict[uuid])
-        return entries
+            items.append(self.__kb_dict[uuid])
+        return items
 
-    def update(self, filter, update):
+    def update(self, filter, update) -> None:
+        """
+        Update the provided slots matching the filter.
+
+        Parameters
+        ----------
+        filter: dict
+            Filter for the items to update
+        update: dict
+            The slots to update
+
+        """
         uuids = self.__get_uuids(filter)
         if(len(uuids) > 0):
             for uuid in uuids:
@@ -69,23 +102,48 @@ class SimpleKb():
             self.__kb_dict[str(get_uuid())] = update
         self.__save(self.__sync_to_file)
 
-    def delete(self, keys, entry):
-        uuids = self.__get_uuids(keys, entry)
+    def delete(self, filter):
+        """
+        Delete the items matching the filter.
+
+        Parameters
+        ----------
+        filter: dict
+            Filter for the items to update
+
+        """
+        uuids = self.__get_uuids(filter)
         for uuid in uuids:
             del self.__kb_dict[uuid]
         self.__save(self.__sync_to_file)
 
-    def show(self):
+    def print(self):
+        """
+        Print the complete knowledge base.
+
+        """
         for uuid, e in self.__kb_dict.items():
             print(f'{uuid}: {e}')
 
-    def size_in_kb(self) -> int:
+    def size(self) -> int:
+        """
+        Return the size of the knowledge base in bytes.
+
+        """
         return sys.getsizeof(self.__kb_dict)
 
     def count(self) -> int:
+        """
+        Return the number of items in the knowledge base.
+
+        """
         return len(self.__kb_dict)
 
     def save(self):
+        """
+        Save the knowledge base.
+
+        """
         self.__save(True)
         self.get_logger().info(f'kb saved to file {self.__filename} with {self.size_in_kb} bytes; '
             + f'{self.count()} entries')
