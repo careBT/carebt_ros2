@@ -85,6 +85,9 @@ class SimpleKb():
         """
         Update the provided slots matching the filter.
 
+        Update the provided slots matching the filter. If the filter does not
+        match the item is created.
+
         Parameters
         ----------
         filter: dict
@@ -99,7 +102,9 @@ class SimpleKb():
                 for key in update:
                     self.__kb_dict[uuid][key] = update[key]
         else:
-            self.__kb_dict[str(get_uuid())] = update
+            # merge filter and update
+            filter.update(update)
+            self.__kb_dict[str(get_uuid())] = filter
         self.__save(self.__sync_to_file)
 
     def delete(self, filter):
