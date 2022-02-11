@@ -15,7 +15,7 @@
 from carebt_simple_kb.simple_kb import SimpleKb
 
 
-class TestKb():
+class TestSimpleKb():
 
     def test_create_from_file(self):
         kb = SimpleKb('src/carebt_ros2/carebt_simple_kb/test/data/memory.json')
