@@ -24,8 +24,8 @@ KB_DATA_GATHERER_LIST_PARAM = 'DataGatherer.data_gatherer'
 class GenericDataGatherer(PluginBase):
 
     def init_callback(self, plugin_name: str):
-        self._kb_server.declare_parameter(KB_DATA_GATHERER_LIST_PARAM, [
-                                          ''])  # TODO: empty string list
+        # TODO: empty string list, instead of list with one empty string
+        self._kb_server.declare_parameter(KB_DATA_GATHERER_LIST_PARAM, [''])
 
         # create data_gatherer
         for dg in filter(lambda name: len(name) >= 3,
@@ -54,6 +54,7 @@ class GenericDataGatherer(PluginBase):
             self._kb_server.get_logger().info(f'GenericDataGatherer - {dg} max_items= {max_items}')
             self._kb_server.get_logger().info(f'GenericDataGatherer - {dg} kb_filter= {kb_filter}')
 
+            # import msg type
             msg_class = import_class(msg_type)
             self._kb_server.create_subscription(msg_class, topic, functools.partial(
                 self.data_gatherer_callback, slot, kb_filter, max_items), 10)

@@ -43,7 +43,8 @@ class KbServer(Node):
         # declare parameters
         self.declare_parameter(KB_FILE_PARAM, 'memory.json')
         self.declare_parameter(KB_PERSIST_PARAM, False)
-        self.declare_parameter(KB_PLUGIN_LIST_PARAM, [''])  # TODO: empty string list
+        # TODO: empty string list, instead of list with one empty string
+        self.declare_parameter(KB_PLUGIN_LIST_PARAM, [''])
 
         # read parameters
         kb_file = self.get_parameter(KB_FILE_PARAM).get_parameter_value().string_value
