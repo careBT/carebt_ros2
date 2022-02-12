@@ -13,11 +13,17 @@
 # limitations under the License.
 
 from carebt_msgs.srv import KbCrud
+from carebt_msgs.action import KbEvalState
 from carebt_simple_kb.simple_kb import SimpleKb
 from carebt_simple_kb.plugin_base import import_class
 import json
 import rclpy
+from rclpy.action import ActionServer, CancelResponse
 from rclpy.node import Node
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.action.server import ServerGoalHandle
+import time
 
 
 # parameter constants
@@ -46,8 +52,18 @@ class KbServer(Node):
         self.get_logger().info(f'kb created with {self.__simple_kb.size()} bytes; '
                                + f'{self.__simple_kb.count()} entries')
 
-        # create ports
+        # create crud service
         self.create_service(KbCrud, 'crud', self.query_callback)
+
+        # create wait_state action server
+        ActionServer(
+            self,
+            KbEvalState,
+            'wait_state',
+            callback_group=ReentrantCallbackGroup(),
+            execute_callback=self.__wait_state_execute_callback,
+            #goal_callback=self.__wait_state_goal_callback,
+            cancel_callback=self.__wait_state_cancel_callback)
 
         # create plugins
         self.__plugins = []
@@ -72,6 +88,44 @@ class KbServer(Node):
 
     def delete(self, filter):
         self.__simple_kb.delete(filter)
+
+    # def __wait_state_goal_callback(self, goal_request):
+    #     self.get_logger().info(f'goal_callback -- Received goal request: {goal_request}')
+    #     self.__wait_state_goal_requests.append(goal_request)
+    #     return GoalResponse.ACCEPT
+
+    def __wait_state_execute_callback(self, goal_handle: ServerGoalHandle):
+        while True:
+            goal: KbEvalState.Goal = goal_handle.request
+            if not goal_handle.is_active:
+                self.get_logger().info("execute_callback -- Goal aborted")
+                return KbEvalState.Result()
+
+            if goal_handle.is_cancel_requested:
+                goal_handle.canceled()
+                self.get_logger().info("execute_callback -- Goal canceled")
+                return KbEvalState.Result()
+
+            filter = json.loads(goal.filter)
+            result = self.read(filter)
+            print(f'result= {result}')
+            try:
+                if(eval(goal.eval)):
+                    print(f'eval {goal.eval} is true')
+                    break
+            except Exception as e:
+                print(f'eval {goal.eval} exception: {e}')
+
+            time.sleep(1)
+
+        goal_handle.succeed()
+        result = KbEvalState.Result()
+        result.response = 'eval is True'
+        return result
+
+    def __wait_state_cancel_callback(self, goal_handle):
+        self.get_logger().info(f'cancel_callback -- Received cancel request: {goal_handle}')
+        return CancelResponse.ACCEPT
 
     def query_callback(self, request: KbCrud.Request, response: KbCrud.Response):
         self.get_logger().info(
@@ -109,7 +163,11 @@ class KbServer(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = KbServer('carebt_simple_kb')
-    rclpy.spin(node)
+
+    # Use a MultiThreadedExecutor to enable processing goals concurrently
+    executor = MultiThreadedExecutor()
+    rclpy.spin(node, executor=executor)
+
     rclpy.shutdown()
 
 
