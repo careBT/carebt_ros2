@@ -12,9 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from carebt_simple_kb.plugin_base import import_class
-from carebt_simple_kb.plugin_base import PluginBase
+from rclpy.node import Node
+from typing import TYPE_CHECKING
 
-__all__ = ['import_class',
-           'PluginBase',
-           ]
+if TYPE_CHECKING:
+    from carebt_simple_kb.carebt_simple_kb import KbServer  # pragma: no cover
+
+def import_class(name: str) -> str:
+    components = name.split('.')
+    mod = __import__(".".join(components[0:-1]), fromlist=components[-1])
+    clazz = getattr(mod, components[-1])
+    return clazz
+
+
+class PluginBase():
+
+    def __init__(self, kb_server: 'KbServer', plugin_name: str):
+        self._kb_server = kb_server
+        self.init_callback(plugin_name)
+
+    # PUBLIC
+
+    def init_callback(self, plugin_name: str):
+        pass
