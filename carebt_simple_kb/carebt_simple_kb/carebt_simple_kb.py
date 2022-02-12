@@ -56,7 +56,7 @@ class KbServer(Node):
                                + f'{self.__simple_kb.count()} entries')
 
         # create crud service
-        self.create_service(KbCrud, 'crud', self.query_callback)
+        self.create_service(KbCrud, 'crud', self.__crud_query_callback)
 
         # create wait_state action server
         ActionServer(
@@ -64,9 +64,8 @@ class KbServer(Node):
             KbEvalState,
             'wait_eval_state',
             callback_group=ReentrantCallbackGroup(),
-            execute_callback=self.__wait_state_execute_callback,
-            #goal_callback=self.__wait_state_goal_callback,
-            cancel_callback=self.__wait_state_cancel_callback)
+            execute_callback=self.__wait_eval_state_execute_callback,
+            cancel_callback=self.__wait_eval_state_cancel_callback)
 
         # create plugins
         self.__plugins = []
@@ -78,6 +77,8 @@ class KbServer(Node):
             # import and instantiate plugin
             plugin_class = import_class(plugin_type)
             self.__plugins.append(plugin_class(self, plugin))
+
+    ## the Kb CRUD operations
 
     def create(self, item) -> None:
         self.__simple_kb.create(item)
@@ -98,7 +99,9 @@ class KbServer(Node):
         self.__event.set()
         self.__event.clear()
 
-    def __wait_state_execute_callback(self, goal_handle: ServerGoalHandle):
+    ## wait_eval_state action-server callbacks
+
+    def __wait_eval_state_execute_callback(self, goal_handle: ServerGoalHandle):
         while True:
             goal: KbEvalState.Goal = goal_handle.request
             if not goal_handle.is_active:
@@ -125,11 +128,13 @@ class KbServer(Node):
         result.response = 'eval is True'
         return result
 
-    def __wait_state_cancel_callback(self, goal_handle):
+    def __wait_eval_state_cancel_callback(self, goal_handle):
         self.get_logger().info(f'cancel_callback -- Received cancel request: {goal_handle}')
         return CancelResponse.ACCEPT
 
-    def query_callback(self, request: KbCrud.Request, response: KbCrud.Response):
+    ## CRUD query callback
+
+    def __crud_query_callback(self, request: KbCrud.Request, response: KbCrud.Response):
         self.get_logger().info(
             f'Incoming request: {request.operation} {request.filter} {request.data}')
 
