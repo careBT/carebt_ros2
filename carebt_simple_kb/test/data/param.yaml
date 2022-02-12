@@ -11,6 +11,7 @@ carebt_simple_kb:
         type: 'std_msgs.msg.Int32'
         kb_filter: '{"is-a": "Robot"}'
         slot: 'battery_soc'
+        max_items: 3
       BobsPose:
         topic: '/bobs_pose'
         type: 'geometry_msgs.msg.PoseStamped'
