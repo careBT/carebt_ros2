@@ -24,6 +24,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.action.server import ServerGoalHandle
 import time
+import threading
 
 
 # parameter constants
@@ -36,6 +37,8 @@ class KbServer(Node):
 
     def __init__(self, node_name: str):
         super().__init__(node_name)
+
+        self.__event = threading.Event()
 
         # declare parameters
         self.declare_parameter(KB_FILE_PARAM, 'memory.json')
@@ -59,7 +62,7 @@ class KbServer(Node):
         ActionServer(
             self,
             KbEvalState,
-            'wait_state',
+            'wait_eval_state',
             callback_group=ReentrantCallbackGroup(),
             execute_callback=self.__wait_state_execute_callback,
             #goal_callback=self.__wait_state_goal_callback,
@@ -78,21 +81,22 @@ class KbServer(Node):
 
     def create(self, item) -> None:
         self.__simple_kb.create(item)
+        self.__event.set()
+        self.__event.clear()
 
     def read(self, filter):
         return self.__simple_kb.read(filter)
 
     def update(self, filter, update) -> None:
         self.__simple_kb.update(filter, update)
+        self.__event.set()
+        self.__event.clear()
         return self.__simple_kb.read(filter)
 
     def delete(self, filter):
         self.__simple_kb.delete(filter)
-
-    # def __wait_state_goal_callback(self, goal_request):
-    #     self.get_logger().info(f'goal_callback -- Received goal request: {goal_request}')
-    #     self.__wait_state_goal_requests.append(goal_request)
-    #     return GoalResponse.ACCEPT
+        self.__event.set()
+        self.__event.clear()
 
     def __wait_state_execute_callback(self, goal_handle: ServerGoalHandle):
         while True:
@@ -108,15 +112,13 @@ class KbServer(Node):
 
             filter = json.loads(goal.filter)
             result = self.read(filter)
-            print(f'result= {result}')
             try:
                 if(eval(goal.eval)):
-                    print(f'eval {goal.eval} is true')
                     break
             except Exception as e:
-                print(f'eval {goal.eval} exception: {e}')
+                print(f'eval: {goal.eval} -- EXCEPTION: {e}')
 
-            time.sleep(1)
+            self.__event.wait()
 
         goal_handle.succeed()
         result = KbEvalState.Result()
