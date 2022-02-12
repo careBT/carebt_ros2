@@ -109,10 +109,7 @@ class KbServer(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = KbServer('carebt_simple_kb')
-    try:
-        rclpy.spin(node)
-    except:
-        print('\nbye bye.')
+    rclpy.spin(node)
     rclpy.shutdown()
 
 

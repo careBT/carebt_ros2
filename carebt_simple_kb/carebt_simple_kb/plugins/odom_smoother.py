@@ -39,6 +39,7 @@ class OdomSmoother(PluginBase):
         self._kb_server.declare_parameter(f'{plugin_name}.topic', 'odom')
         self._kb_server.declare_parameter(f'{plugin_name}.history_duration_ms', 10000)
         self._kb_server.declare_parameter(f'{plugin_name}.slot', '')
+        self._kb_server.declare_parameter(f'{plugin_name}.kb_filter', '')
         self._kb_server.declare_parameter(f'{plugin_name}.kb_update_rate_ms', 1000)
 
         topic = self._kb_server.get_parameter(
@@ -47,6 +48,8 @@ class OdomSmoother(PluginBase):
                 f'{plugin_name}.history_duration_ms').get_parameter_value().integer_value
         self.__slot = self._kb_server.get_parameter(
                 f'{plugin_name}.slot').get_parameter_value().string_value
+        self.__kb_filter = self._kb_server.get_parameter(
+                f'{plugin_name}.kb_filter').get_parameter_value().string_value
         self.__kb_update_rate_ms = self._kb_server.get_parameter(
                 f'{plugin_name}.kb_update_rate_ms').get_parameter_value().integer_value
 
@@ -129,7 +132,7 @@ class OdomSmoother(PluginBase):
         current_ts = datetime.now()
         if(int((current_ts - self.__last_kb_update).total_seconds() * 1000) >= self.__kb_update_rate_ms):
             msg_dict = message_converter.convert_ros_message_to_dictionary(self.__twist_smoothed)
-            filter = {'is-a': self.__slot}
-            update = {'ts': Clock().now().nanoseconds, 'data': msg_dict}
+            filter = eval(self.__kb_filter)
+            update = {self.__slot: {'ts': Clock().now().nanoseconds, 'data': msg_dict}}
             self._kb_server.update(filter, update)
             self.__last_kb_update = current_ts

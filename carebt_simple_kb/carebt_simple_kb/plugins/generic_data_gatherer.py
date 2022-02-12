@@ -35,52 +35,29 @@ class GenericDataGatherer(PluginBase):
             self._kb_server.declare_parameter(f'{plugin_name}.{dg}.topic', '')
             self._kb_server.declare_parameter(f'{plugin_name}.{dg}.type', '')
             self._kb_server.declare_parameter(f'{plugin_name}.{dg}.slot', '')
-            self._kb_server.declare_parameter(f'{plugin_name}.{dg}.insert_new', False)
-            self._kb_server.declare_parameter(f'{plugin_name}.{dg}.max_items', 10)
+            self._kb_server.declare_parameter(f'{plugin_name}.{dg}.kb_filter', '')
             topic = self._kb_server.get_parameter(
                 f'{plugin_name}.{dg}.topic').get_parameter_value().string_value
             msg_type = self._kb_server.get_parameter(
                 f'{plugin_name}.{dg}.type').get_parameter_value().string_value
             slot = self._kb_server.get_parameter(
                 f'{plugin_name}.{dg}.slot').get_parameter_value().string_value
-            insert_new = self._kb_server.get_parameter(
-                f'{plugin_name}.{dg}.insert_new').get_parameter_value().bool_value
-            max_items = self._kb_server.get_parameter(
-                f'{plugin_name}.{dg}.max_items').get_parameter_value().integer_value
+            kb_filter = self._kb_server.get_parameter(
+                f'{plugin_name}.{dg}.kb_filter').get_parameter_value().string_value
 
             self._kb_server.get_logger().info(f'GenericDataGatherer - {dg} topic= {topic}')
             self._kb_server.get_logger().info(f'GenericDataGatherer - {dg} msg_type= {msg_type}')
             self._kb_server.get_logger().info(f'GenericDataGatherer - {dg} slot= {slot}')
-            self._kb_server.get_logger().info(f'GenericDataGatherer - {dg} insert_new= {insert_new}')
-            self._kb_server.get_logger().info(f'GenericDataGatherer - {dg} max_items= {max_items}')
+            self._kb_server.get_logger().info(f'GenericDataGatherer - {dg} kb_filter= {kb_filter}')
 
             msg_class = import_class(msg_type)
             self._kb_server.create_subscription(msg_class, topic, functools.partial(
-                self.data_gatherer_callback, slot, insert_new, max_items), 10)
+                self.data_gatherer_callback, slot, kb_filter), 10)
 
-    def data_gatherer_callback(self, slot, insert_new, max_items, msg):
+    def data_gatherer_callback(self, slot, kb_filter, msg):
         self._kb_server.get_logger().info(
-            f'GenericDataGatherer - Incoming topic= {msg}; slot= {slot}; insert_new= {insert_new}')
+            f'GenericDataGatherer - Incoming topic= {msg}; slot= {slot}')
         msg_dict = message_converter.convert_ros_message_to_dictionary(msg)
-        filter = {'is-a': slot}
-        update = {'ts': Clock().now().nanoseconds, 'data': msg_dict}
-        if(insert_new):
-            item = filter.copy()
-            item.update(update)
-            # create new item in kb
-            self._kb_server.create(item)
-            # read current items
-            items = self._kb_server.read(filter)
-
-            # create and sort list with timestamps
-            timestamps = []
-            for i in items:
-                timestamps.append(i['ts'])
-            timestamps.sort()
-
-            # remove oldest items until max_items is reached
-            for _ in range(max_items, len(items)):
-                self._kb_server.delete({'is-a': slot, 'ts': timestamps[0]})
-                del timestamps[0]
-        else:
-            self._kb_server.update(filter, update)
+        filter = eval(kb_filter)
+        update = {slot: {'ts': Clock().now().nanoseconds, 'data': msg_dict}}
+        self._kb_server.update(filter, update)

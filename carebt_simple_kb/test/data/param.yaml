@@ -5,21 +5,21 @@ carebt_simple_kb:
     plugins: ['DataGatherer', 'OdomSmoother']
     DataGatherer:
       class: 'carebt_simple_kb.plugins.generic_data_gatherer.GenericDataGatherer'
-      data_gatherer: ['BatteryState', 'RobotPose']
+      data_gatherer: ['BatteryState', 'BobsPose']
       BatteryState:
         topic: '/battery'
         type: 'std_msgs.msg.Int32'
-        slot: 'Battery'
-        insert_new: True
-        max_items: 3
-      RobotPose:
-        topic: '/robot_pose'
+        kb_filter: '{"is-a": "Robot"}'
+        slot: 'battery_soc'
+      BobsPose:
+        topic: '/bobs_pose'
         type: 'geometry_msgs.msg.PoseStamped'
-        slot: 'RobotPose'
-        insert_new: False
+        kb_filter: '{"is-a": "Person", "name": "Bob"}'
+        slot: 'current_pose'
     OdomSmoother:
       class: 'carebt_simple_kb.plugins.odom_smoother.OdomSmoother'
       topic: 'odom'
       history_duration_ms: 5000
-      slot: 'SmoothedOdom'
+      kb_filter: '{"is-a": "Robot"}'
+      slot: 'smoothed_odom'
       kb_update_rate_ms: 500
