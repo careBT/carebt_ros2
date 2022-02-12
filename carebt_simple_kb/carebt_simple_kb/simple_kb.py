@@ -14,6 +14,7 @@
 
 import json
 import sys
+import threading
 from uuid import uuid4 as get_uuid
 
 
@@ -23,6 +24,7 @@ class SimpleKb():
         self.__filename = filename
         self.__sync_to_file = sync_to_file
         self.__kb_dict = {}
+        self.__lock = threading.Lock()
 
         try:
             f = open(filename)
@@ -57,8 +59,9 @@ class SimpleKb():
         item: dict
             Item to create
         """
-        self.__kb_dict[str(get_uuid())] = item
-        self.__save(self.__sync_to_file)
+        with self.__lock:
+            self.__kb_dict[str(get_uuid())] = item
+            self.__save(self.__sync_to_file)
 
     def read(self, filter):
         """
@@ -76,9 +79,10 @@ class SimpleKb():
 
         """
         items = []
-        uuids = self.__get_uuids(filter)
-        for uuid in uuids:
-            items.append(self.__kb_dict[uuid])
+        with self.__lock:
+            uuids = self.__get_uuids(filter)
+            for uuid in uuids:
+                items.append(self.__kb_dict[uuid])
         return items
 
     def update(self, filter, update) -> None:
@@ -96,16 +100,17 @@ class SimpleKb():
             The slots to update
 
         """
-        uuids = self.__get_uuids(filter)
-        if(len(uuids) > 0):
-            for uuid in uuids:
-                for key in update:
-                    self.__kb_dict[uuid][key] = update[key]
-        else:
-            # merge filter and update
-            filter.update(update)
-            self.__kb_dict[str(get_uuid())] = filter
-        self.__save(self.__sync_to_file)
+        with self.__lock:
+            uuids = self.__get_uuids(filter)
+            if(len(uuids) > 0):
+                for uuid in uuids:
+                    for key in update:
+                        self.__kb_dict[uuid][key] = update[key]
+            else:
+                # merge filter and update
+                filter.update(update)
+                self.__kb_dict[str(get_uuid())] = filter
+            self.__save(self.__sync_to_file)
 
     def delete(self, filter):
         """
@@ -117,10 +122,11 @@ class SimpleKb():
             Filter for the items to update
 
         """
-        uuids = self.__get_uuids(filter)
-        for uuid in uuids:
-            del self.__kb_dict[uuid]
-        self.__save(self.__sync_to_file)
+        with self.__lock:
+            uuids = self.__get_uuids(filter)
+            for uuid in uuids:
+                del self.__kb_dict[uuid]
+            self.__save(self.__sync_to_file)
 
     def print(self):
         """
@@ -149,6 +155,7 @@ class SimpleKb():
         Save the knowledge base.
 
         """
-        self.__save(True)
-        self.get_logger().info(f'kb saved to file {self.__filename} with {self.size_in_kb} bytes; '
-            + f'{self.count()} entries')
+        with self.__lock:
+            self.__save(True)
+            self.get_logger().info(f'kb saved to file {self.__filename} with {self.size_in_kb} bytes; '
+                + f'{self.count()} entries')
