@@ -29,9 +29,12 @@ class PluginBase():
 
     def __init__(self, kb_server: 'KbServer', plugin_name: str):
         self._kb_server = kb_server
-        self.init_callback(plugin_name)
+        self.on_init_callback(plugin_name)
 
     # PUBLIC
 
-    def init_callback(self, plugin_name: str):
+    def on_init_callback(self, plugin_name: str):
+        pass
+
+    def on_update_callback(self):
         pass

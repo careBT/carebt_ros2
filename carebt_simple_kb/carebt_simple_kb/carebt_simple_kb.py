@@ -79,26 +79,11 @@ class KbServer(Node):
             plugin_class = import_class(plugin_type)
             self.__plugins.append(plugin_class(self, plugin))
 
-    ## the Kb CRUD operations
-
-    def create(self, item) -> None:
-        self.__simple_kb.create(item)
+    def __kb_updated(self):
         self.__event.set()
         self.__event.clear()
-
-    def read(self, filter):
-        return self.__simple_kb.read(filter)
-
-    def update(self, filter, update) -> None:
-        self.__simple_kb.update(filter, update)
-        self.__event.set()
-        self.__event.clear()
-        return self.__simple_kb.read(filter)
-
-    def delete(self, filter):
-        self.__simple_kb.delete(filter)
-        self.__event.set()
-        self.__event.clear()
+        for plugin in self.__plugins:
+            plugin.on_update_callback()
 
     ## wait_eval_state action-server callbacks
 
@@ -166,6 +151,24 @@ class KbServer(Node):
             print(f'unsupported operation ({request.operation}), use: CREATE/READ/UPDATE/DELETE')
 
         return response
+
+    ## the Kb CRUD operations
+
+    def create(self, item) -> None:
+        self.__simple_kb.create(item)
+        self.__kb_updated()
+
+    def read(self, filter):
+        return self.__simple_kb.read(filter)
+
+    def update(self, filter, update) -> None:
+        self.__simple_kb.update(filter, update)
+        self.__kb_updated()
+        return self.__simple_kb.read(filter)
+
+    def delete(self, filter):
+        self.__simple_kb.delete(filter)
+        self.__kb_updated()
 
 
 def main(args=None):

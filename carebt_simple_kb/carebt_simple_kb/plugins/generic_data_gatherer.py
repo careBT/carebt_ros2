@@ -23,7 +23,7 @@ KB_DATA_GATHERER_LIST_PARAM = 'DataGatherer.data_gatherer'
 
 class GenericDataGatherer(PluginBase):
 
-    def init_callback(self, plugin_name: str):
+    def on_init_callback(self, plugin_name: str):
         # TODO: empty string list, instead of list with one empty string
         self._kb_server.declare_parameter(KB_DATA_GATHERER_LIST_PARAM, [''])
 

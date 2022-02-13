@@ -33,7 +33,7 @@ from rclpy_message_converter import message_converter
 
 class OdomSmoother(PluginBase):
 
-    def init_callback(self, plugin_name: str):
+    def on_init_callback(self, plugin_name: str):
         self.__last_kb_update = datetime.min
 
         self._kb_server.declare_parameter(f'{plugin_name}.topic', 'odom')
