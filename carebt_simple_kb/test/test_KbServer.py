@@ -38,7 +38,7 @@ class TestKbServer():
         req.operation = 'READ'
         filter = {'is-a': 'Person', 'name': 'Bob'}
         req.filter = json.dumps(filter)
-        result = kbserver.query_callback(req, res)
+        result = kbserver._KbServer__crud_query_callback(req, res)
         result = json.loads(result.response)
 
         assert len(result) == 1
@@ -55,7 +55,7 @@ class TestKbServer():
         req.operation = 'READ'
         filter = {'is-a': 'Person', 'name': 'XXX'}
         req.filter = json.dumps(filter)
-        result = kbserver.query_callback(req, res)
+        result = kbserver._KbServer__crud_query_callback(req, res)
         result = json.loads(result.response)
 
         assert len(result) == 0
@@ -72,7 +72,7 @@ class TestKbServer():
         req.filter = json.dumps(filter)
         req.data = json.dumps(data)
 
-        result = kbserver.query_callback(req, res)
+        result = kbserver._KbServer__crud_query_callback(req, res)
         result = json.loads(result.response)
 
         assert len(result) == 1
@@ -97,7 +97,7 @@ class TestKbServer():
         req.filter = json.dumps(filter)
         req.data = json.dumps(data)
 
-        result = kbserver.query_callback(req, res)
+        result = kbserver._KbServer__crud_query_callback(req, res)
         result = json.loads(result.response)
 
         p: PoseStamped = message_converter.convert_dictionary_to_ros_message(
