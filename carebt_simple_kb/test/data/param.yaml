@@ -2,7 +2,7 @@ carebt_simple_kb:
   ros__parameters:
     kb_file: 'src/carebt_ros2/carebt_simple_kb/test/data/memory.json'
     kb_persist: False
-    plugins: ['DataGatherer', 'OdomSmoother']
+    plugins: ['DataGatherer', 'OdomSmoother', 'WebView']
     DataGatherer:
       class: 'carebt_simple_kb.plugins.generic_data_gatherer.GenericDataGatherer'
       data_gatherer: ['BatteryState', 'BobsPose']
@@ -24,3 +24,7 @@ carebt_simple_kb:
       kb_filter: '{"is-a": "Robot"}'
       slot: 'smoothed_odom'
       kb_update_rate_ms: 500
+    WebView:
+      class: 'carebt_simple_kb.plugins.simple_kb_web_viewer.SimpleKbWebViewer'
+      host: 'localhost'
+      port: 8080
