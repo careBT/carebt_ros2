@@ -132,8 +132,7 @@ class SimpleKb():
         Print the complete knowledge base.
 
         """
-        for uuid, e in self.__kb_dict.items():
-            print(f'{uuid}: {e}')
+        print(json.dumps(self.__kb_dict, sort_keys=True, indent=2))
 
     def size(self) -> int:
         """
