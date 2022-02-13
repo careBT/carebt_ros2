@@ -104,8 +104,7 @@ class SimpleKb():
             uuids = self.__get_uuids(filter)
             if(len(uuids) > 0):
                 for uuid in uuids:
-                    for key in update:
-                        self.__kb_dict[uuid][key] = update[key]
+                    self.__kb_dict[uuid].update(update)
             else:
                 # merge filter and update
                 filter.update(update)
