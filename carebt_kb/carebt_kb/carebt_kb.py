@@ -14,8 +14,8 @@
 
 from carebt_msgs.srv import KbCrud
 from carebt_msgs.action import KbEvalState
-from carebt_simple_kb.simple_kb import SimpleKb
-from carebt_simple_kb.plugin_base import import_class
+from carebt_kb.simple_kb import SimpleKb
+from carebt_kb.plugin_base import import_class
 import json
 import rclpy
 from rclpy.action import ActionServer, CancelResponse
@@ -23,7 +23,6 @@ from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.action.server import ServerGoalHandle
-import time
 import threading
 
 
@@ -176,7 +175,7 @@ class KbServer(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = KbServer('carebt_simple_kb')
+    node = KbServer('carebt_kb')
 
     # Use a MultiThreadedExecutor to enable processing goals concurrently
     executor = MultiThreadedExecutor()

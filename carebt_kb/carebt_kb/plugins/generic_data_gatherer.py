@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from carebt_simple_kb.plugin_base import import_class
-from carebt_simple_kb.plugin_base import PluginBase
+from carebt_kb.plugin_base import import_class
+from carebt_kb.plugin_base import PluginBase
 import functools
 from rclpy.clock import Clock
 from rclpy_message_converter import message_converter

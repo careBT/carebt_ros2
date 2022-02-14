@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'carebt_simple_kb'
+package_name = 'carebt_kb'
 
 setup(
     name=package_name,
@@ -13,14 +13,14 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='ros',
-    maintainer_email='ros@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer='Andreas Steck',
+    maintainer_email='steck.andi@gmail.com',
+    description='A ROS2 Knowledge Base implementation.',
+    license='Apache License 2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'carebt_simple_kb = carebt_simple_kb.carebt_simple_kb:main'
+            'carebt_kb = carebt_kb.carebt_kb:main'
         ],
     },
 )

@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from carebt_simple_kb.plugin_base import PluginBase
+from carebt_kb.plugin_base import PluginBase
 from functools import partial
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import sys
 import threading
 
 

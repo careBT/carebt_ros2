@@ -1,10 +1,10 @@
-carebt_simple_kb:
+carebt_kb:
   ros__parameters:
-    kb_file: 'src/carebt_ros2/carebt_simple_kb/test/data/memory.json'
+    kb_file: 'src/carebt_ros2/carebt_kb/test/data/memory.json'
     kb_persist: False
     plugins: ['DataGatherer', 'OdomSmoother', 'WebView']
     DataGatherer:
-      class: 'carebt_simple_kb.plugins.generic_data_gatherer.GenericDataGatherer'
+      class: 'carebt_kb.plugins.generic_data_gatherer.GenericDataGatherer'
       data_gatherer: ['BatteryState', 'BobsPose']
       BatteryState:
         topic: '/battery'
@@ -18,13 +18,13 @@ carebt_simple_kb:
         kb_filter: '{"is-a": "Person", "name": "Bob"}'
         slot: 'current_pose'
     OdomSmoother:
-      class: 'carebt_simple_kb.plugins.odom_smoother.OdomSmoother'
+      class: 'carebt_kb.plugins.odom_smoother.OdomSmoother'
       topic: 'odom'
       history_duration_ms: 5000
       kb_filter: '{"is-a": "Robot"}'
       slot: 'smoothed_odom'
       kb_update_rate_ms: 500
     WebView:
-      class: 'carebt_simple_kb.plugins.simple_kb_web_viewer.SimpleKbWebViewer'
+      class: 'carebt_kb.plugins.simple_kb_web_viewer.SimpleKbWebViewer'
       host: 'localhost'
       port: 8080

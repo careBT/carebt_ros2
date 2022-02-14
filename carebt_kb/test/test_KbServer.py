@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from carebt_msgs.srv import KbCrud
-from carebt_simple_kb.carebt_simple_kb import KbServer
+from carebt_kb.carebt_kb import KbServer
 from geometry_msgs.msg import PoseStamped
 import json
 import math
@@ -26,12 +26,12 @@ class TestKbServer():
 
     @pytest.fixture(scope="class", autouse=True)
     def execute_before_any_test(self):
-        rclpy.init(args=['carebt_simple_kb', '--ros-args',
-                         '-p', 'kb_file:=src/carebt_ros2/carebt_simple_kb/test/data/memory.json',
+        rclpy.init(args=['carebt_kb', '--ros-args',
+                         '-p', 'kb_file:=src/carebt_ros2/carebt_kb/test/data/memory.json',
                          '-p', 'kb_persist:=False'])
 
     def test_read_bob(self, execute_before_any_test):
-        kbserver = KbServer('carebt_simple_kb')
+        kbserver = KbServer('carebt_kb')
         req = KbCrud.Request()
         res = KbCrud.Response()
 
@@ -48,7 +48,7 @@ class TestKbServer():
         assert result[0]['age'] == 39
 
     def test_read_xxx(self, execute_before_any_test):
-        kbserver = KbServer('carebt_simple_kb')
+        kbserver = KbServer('carebt_kb')
         req = KbCrud.Request()
         res = KbCrud.Response()
 
@@ -61,7 +61,7 @@ class TestKbServer():
         assert len(result) == 0
 
     def test_update_age_of_bob(self, execute_before_any_test):
-        kbserver = KbServer('carebt_simple_kb')
+        kbserver = KbServer('carebt_kb')
         req = KbCrud.Request()
         res = KbCrud.Response()
 
@@ -82,7 +82,7 @@ class TestKbServer():
         assert result[0]['age'] == 55
 
     def test_update_add_pose_to_bob(self, execute_before_any_test):
-        kbserver = KbServer('carebt_simple_kb')
+        kbserver = KbServer('carebt_kb')
         req = KbCrud.Request()
         res = KbCrud.Response()
 

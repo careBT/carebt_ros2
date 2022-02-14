@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from carebt_simple_kb.simple_kb import SimpleKb
+from carebt_kb.simple_kb import SimpleKb
 
 
 class TestSimpleKb():
 
     def test_create_from_file(self):
-        kb = SimpleKb('src/carebt_ros2/carebt_simple_kb/test/data/memory.json')
+        kb = SimpleKb('src/carebt_ros2/carebt_kb/test/data/memory.json')
         assert len(kb._SimpleKb__kb_dict) == 4
 
     def test_get_uuids(self):
-        kb = SimpleKb('src/carebt_ros2/carebt_simple_kb/test/data/memory.json')
+        kb = SimpleKb('src/carebt_ros2/carebt_kb/test/data/memory.json')
 
         result = kb._SimpleKb__get_uuids({'is-a': 'Person', 'name': 'Bob'})
         assert len(result) == 1
@@ -39,7 +39,7 @@ class TestSimpleKb():
         assert len(result) == 4
 
     def test_read(self):
-        kb = SimpleKb('src/carebt_ros2/carebt_simple_kb/test/data/memory.json')
+        kb = SimpleKb('src/carebt_ros2/carebt_kb/test/data/memory.json')
 
         result = kb.read({'is-a': 'Person', 'name': 'Bob'})
         assert len(result) == 1
@@ -58,7 +58,7 @@ class TestSimpleKb():
         assert len(result) == 4
 
     def test_create(self):
-        kb = SimpleKb('src/carebt_ros2/carebt_simple_kb/test/data/memory.json')
+        kb = SimpleKb('src/carebt_ros2/carebt_kb/test/data/memory.json')
 
         kb.create({'is-a': 'Person', 'name': 'Dave', 'age': 23})
 
@@ -72,7 +72,7 @@ class TestSimpleKb():
         assert result[0]['age'] == 23
 
     def test_update_bob(self):
-        kb = SimpleKb('src/carebt_ros2/carebt_simple_kb/test/data/memory.json')
+        kb = SimpleKb('src/carebt_ros2/carebt_kb/test/data/memory.json')
 
         kb.update({'is-a': 'Person', 'name': 'Bob'}, {'age': 55})
 
@@ -86,7 +86,7 @@ class TestSimpleKb():
         assert result[0]['age'] == 55
 
     def test_update_alice_both(self):
-        kb = SimpleKb('src/carebt_ros2/carebt_simple_kb/test/data/memory.json')
+        kb = SimpleKb('src/carebt_ros2/carebt_kb/test/data/memory.json')
 
         kb.update({'is-a': 'Person', 'name': 'Alice'}, {'age': 99})
 
@@ -101,7 +101,7 @@ class TestSimpleKb():
         assert result[0]['age'] == 99
 
     def test_update_alice_5(self):
-        kb = SimpleKb('src/carebt_ros2/carebt_simple_kb/test/data/memory.json')
+        kb = SimpleKb('src/carebt_ros2/carebt_kb/test/data/memory.json')
 
         kb.update({'is-a': 'Person', 'name': 'Alice', 'age': 5}, {'age': 99})
 
@@ -118,6 +118,6 @@ class TestSimpleKb():
         assert len(result) == 1
 
     def test_print(self):
-        kb = SimpleKb('src/carebt_ros2/carebt_simple_kb/test/data/memory.json')
+        kb = SimpleKb('src/carebt_ros2/carebt_kb/test/data/memory.json')
         print("KB entries")
         kb.print()

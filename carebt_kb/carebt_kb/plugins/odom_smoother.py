@@ -19,7 +19,7 @@
 from queue import Queue
 import threading
 
-from carebt_simple_kb.plugin_base import PluginBase
+from carebt_kb.plugin_base import PluginBase
 from datetime import datetime
 from geometry_msgs.msg import TwistStamped
 from nav_msgs.msg import Odometry
