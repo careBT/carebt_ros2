@@ -126,8 +126,8 @@ class KbServer(Node):
 
         # create
         if(request.operation.upper() == 'CREATE'):
-            item = json.loads(request.data)
-            self.create(item)
+            frame = json.loads(request.data)
+            self.create(frame)
             result = []
             response.response = json.dumps(result)
         # read
