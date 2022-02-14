@@ -50,52 +50,52 @@ class SimpleKb():
 
     # PUBLIC
 
-    def create(self, item) -> None:
+    def create(self, frame) -> None:
         """
-        Create the item in the knowledge base.
+        Create the frame in the knowledge base.
 
         Parameters
         ----------
-        item: dict
-            Item to create
+        frame: dict
+            Frame to create
         """
         with self.__lock:
-            self.__kb_dict[str(get_uuid())] = item
+            self.__kb_dict[str(get_uuid())] = frame
             self.__save(self.__sync_to_file)
 
     def read(self, filter):
         """
-        Read the items matching the filter.
+        Read the frames matching the filter.
 
         Parameters
         ----------
         filter: dict
-            Filter for the items to search
+            Filter for the frames to search
 
         Returns
         -------
         [dict]
-            A list of items
+            A list of frames
 
         """
-        items = []
+        frames = []
         with self.__lock:
             uuids = self.__get_uuids(filter)
             for uuid in uuids:
-                items.append(self.__kb_dict[uuid])
-        return items
+                frames.append(self.__kb_dict[uuid])
+        return frames
 
     def update(self, filter, update) -> None:
         """
         Update the provided slots matching the filter.
 
         Update the provided slots matching the filter. If the filter does not
-        match the item is created.
+        match the frame is created.
 
         Parameters
         ----------
         filter: dict
-            Filter for the items to update
+            Filter for the frames to update
         update: dict
             The slots to update
 
@@ -113,12 +113,12 @@ class SimpleKb():
 
     def delete(self, filter):
         """
-        Delete the items matching the filter.
+        Delete the frames matching the filter.
 
         Parameters
         ----------
         filter: dict
-            Filter for the items to update
+            Filter for the frames to update
 
         """
         with self.__lock:
@@ -143,7 +143,7 @@ class SimpleKb():
 
     def count(self) -> int:
         """
-        Return the number of items in the knowledge base.
+        Return the number of frames in the knowledge base.
 
         """
         return len(self.__kb_dict)
