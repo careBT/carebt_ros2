@@ -154,8 +154,8 @@ class KbServer(Node):
 
     ## the Kb CRUD operations
 
-    def create(self, item) -> None:
-        self.__simple_kb.create(item)
+    def create(self, frame) -> None:
+        self.__simple_kb.create(frame)
         self.__kb_updated()
 
     def read(self, filter):
