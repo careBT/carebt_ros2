@@ -105,13 +105,16 @@ class KbServer(Node):
                 if(eval(goal.eval)):
                     break
             except Exception as e:
-                print(f'eval: {goal.eval} -- EXCEPTION: {e}')
+                msg = f'eval: {goal.eval} -- EXCEPTION: {e}'
+                self.get_logger().warn(msg)
+                feedback_msg = KbEvalState.Feedback()
+                feedback_msg.message = msg
+                goal_handle.publish_feedback(feedback_msg)
 
             self.__event.wait()
 
         goal_handle.succeed()
         result = KbEvalState.Result()
-        result.response = 'eval is True'
         return result
 
     def __wait_eval_state_cancel_callback(self, goal_handle):
