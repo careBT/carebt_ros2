@@ -36,7 +36,7 @@ class RosActionServerSequenceNode(SequenceNode):
         super().__init__(bt_runner, params)
         self.__succeed = False
         self.__goal_handle = None
-        self.__result = action_type.Result()
+        self.result = action_type.Result()
         self.__goal_lock = threading.Lock()
         self.__action_server = ActionServer(
             bt_runner.node,
@@ -56,7 +56,7 @@ class RosActionServerSequenceNode(SequenceNode):
         while(self.__succeed is False):
             sleep(0.1)
         goal_handle.succeed()
-        return self.__result
+        return self.result
 
     def __goal_callback(self, goal_request):
         self.get_logger().debug('{} - __goal_callback -- Received goal request: {}'
