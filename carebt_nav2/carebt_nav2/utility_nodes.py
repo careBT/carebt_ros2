@@ -17,7 +17,9 @@ from threading import Timer
 from carebt.actionNode import ActionNode
 from carebt.nodeStatus import NodeStatus
 from carebt_ros2.rosSubscriberActionNode import RosSubscriberActionNode
+from lifecycle_msgs.srv import ChangeState
 from std_msgs.msg import Empty
+import threading
 
 ########################################################################
 
@@ -42,7 +44,7 @@ class NoopAction(ActionNode):
 class WaitAction(ActionNode):
     """Wait until time has elapsed.
 
-    Waits until the provided time in milliseconds has elapsd.
+    Waits until the provided time in milliseconds has elapsed.
 
     Input Parameters
     ----------------
@@ -91,3 +93,46 @@ class WaitForUserInput(RosSubscriberActionNode):
     def topic_callback(self, msg) -> None:
         self.get_logger().info('{} - user input received.'.format(self.__class__.__name__))
         self.set_status(NodeStatus.SUCCESS)
+
+########################################################################
+
+
+class LifecycleClient(ActionNode):
+    """Changes the state of a Lifecycle Node.
+
+    Input Parameters
+    ----------------
+    ?service : str
+        The nodes lifecycle service name
+    ?id : int
+        The status (id) to change into
+
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner, '?service ?id')
+
+    def on_init(self) -> None:
+        self.get_logger().info('{} - put {} into state {}'
+                               .format(self.__class__.__name__, self._service, self._id))
+        threading.Thread(target=self.__worker, daemon=True).start()
+        self.set_status(NodeStatus.SUSPENDED)
+
+    def __worker(self):
+        self.__client = self.create_client(ChangeState, self._service)
+        if(self.__client.wait_for_service(timeout_sec=1.0)):
+            req = ChangeState.Request()
+            req.transition.id = self._id
+            res: ChangeState.Response = self.__client.call(req)
+            if(res.success):
+                self.set_status(NodeStatus.SUCCESS)
+            else:
+                self.set_status(NodeStatus.FAILURE)
+                self.set_contingency_message('CHANGE_STATE_FAILED')
+        else:
+            self.get_logger().warn('service not available')
+            self.set_status(NodeStatus.FAILURE)
+            self.set_contingency_message('SERVICE_NOT_AVAILABLE')
+
+    def __del__(self) -> None:
+        self.__client.destroy()
