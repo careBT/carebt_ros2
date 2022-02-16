@@ -19,17 +19,24 @@ from carebt.actionNode import ActionNode
 from carebt.nodeStatus import NodeStatus
 from carebt.parallelNode import ParallelNode
 from carebt.rateControlNode import RateControlNode
+from carebt_nav2_pyutil.geometry_utils import euclidean_distance
 from carebt_nav2_pyutil.geometry_utils import calculate_remaining_path_length
 from carebt_nav2_pyutil.geometry_utils import calculate_travel_time
 from carebt_nav2_pyutil.robot_utils import get_current_pose
 from carebt_ros2.rosActionClientActionNode import RosActionClientActionNode
+from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseWithCovarianceStamped
+import math
 from nav2_msgs.action import ComputePathThroughPoses
 from nav2_msgs.action import ComputePathToPose
 from nav2_msgs.action import FollowPath
 from nav2_msgs.action import NavigateToPose
+import rclpy
+from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
+import threading
+from time import sleep
 
 ########################################################################
 
@@ -48,18 +55,54 @@ class InitPoseAction(ActionNode):
 
     def __init__(self, bt_runner):
         super().__init__(bt_runner, '?initial_pose')
-        self._initial_pose = PoseWithCovarianceStamped()
-        self._initialpose_pub = bt_runner.node.create_publisher(PoseWithCovarianceStamped,
-                                                                '/initialpose',
-                                                                10)
+        self.__bt_runner = bt_runner
+        self.set_timeout(5000)
 
-    def on_tick(self) -> None:
-        self.get_logger().info('{} - set initial pose to (x, y): ({:.2f}, {:.2f})'
-                               .format(self.__class__.__name__,
-                                       self._initial_pose.pose.pose.position.x,
-                                       self._initial_pose.pose.pose.position.y))
-        self._initialpose_pub.publish(self._initial_pose)
-        self.set_status(NodeStatus.SUCCESS)
+    def on_init(self) -> None:
+        self.__thread_running = True
+        self.__thread = threading.Thread(target=self.__worker)
+        self.__thread.start()
+        self.set_status(NodeStatus.SUSPENDED)
+
+    def __worker(self):
+        self.__initialpose_pub = self.__bt_runner.node.create_publisher(PoseWithCovarianceStamped,
+                                                                       '/initialpose',
+                                                                       10)
+        self.__initialpose_pub.publish(self._initial_pose)
+
+        self.__tf_buffer = Buffer()
+        self.__tf_listener = TransformListener(self.__tf_buffer, self.__bt_runner.node)
+        amcl_pose_ok: bool = False
+        while amcl_pose_ok == False:
+            if(not self.__thread_running):
+                break
+            try:
+                now = rclpy.time.Time()
+                trans = self.__tf_buffer.lookup_transform(
+                    'map',
+                    'base_link',
+                    now)
+
+                if(abs(trans.transform.translation.x - self._initial_pose.pose.pose.position.x)
+                        < math.sqrt(self._initial_pose.pose.covariance[0])
+                and abs(trans.transform.translation.y - self._initial_pose.pose.pose.position.y)
+                        < math.sqrt(self._initial_pose.pose.covariance[7])):
+                    # AMCL pose ok
+                    self.get_logger().info('{} - AMCL pose ok'
+                                .format(self.__class__.__name__))
+                    amcl_pose_ok = True
+                    self.set_status(NodeStatus.SUCCESS)
+            except TransformException as ex:
+                pass
+
+            sleep(0.1)
+
+
+    def on_timeout(self) -> None:
+        self.__thread_running = False
+        self.__initialpose_pub.destroy()
+        self.set_status(NodeStatus.FAILURE)
+        self.set_contingency_message('INITIALPOSE_NOT_SET')
 
 ########################################################################
 
