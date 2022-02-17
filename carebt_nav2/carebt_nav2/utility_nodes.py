@@ -18,6 +18,9 @@ from carebt.actionNode import ActionNode
 from carebt.nodeStatus import NodeStatus
 from carebt_ros2.rosSubscriberActionNode import RosSubscriberActionNode
 from lifecycle_msgs.srv import ChangeState
+from rcl_interfaces.msg import Parameter
+from rcl_interfaces.srv import SetParameters
+from ros2param.api import get_parameter_value
 from std_msgs.msg import Empty
 import threading
 
@@ -136,3 +139,54 @@ class LifecycleClient(ActionNode):
 
     def __del__(self) -> None:
         self.__client.destroy()
+
+########################################################################
+
+
+class SetParameterClient(ActionNode):
+    """Set the parameter (name/value) of the node.
+
+    Input Parameters
+    ----------------
+    ?node : str
+        The nodes name
+    ?param_name : str
+        The parameters name
+    ?param_value
+        The parameters value
+
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner, '?node ?param_name ?param_value')
+        self.__bt_runner = bt_runner
+
+    def on_init(self) -> None:
+        self.get_logger().info('{} - {} set param {} to {}'
+                               .format(self.__class__.__name__,
+                                       self._node,
+                                       self._param_name,
+                                       self._param_value))
+        threading.Thread(target=self.__worker, daemon=True).start()
+        self.set_status(NodeStatus.SUSPENDED)
+
+    def __worker(self):
+        self.__client = self.__bt_runner.node.create_client(SetParameters,
+                                                            f'/{self._node}/set_parameters')
+        if(self.__client.wait_for_service(timeout_sec=1.0)):
+            param = Parameter()
+            param.name = self._param_name
+            param.value = get_parameter_value(string_value=self._param_value)
+
+            req = SetParameters.Request()
+            req.parameters = [param]
+
+            resp = self.__client.call(req)
+            if resp.results[0].successful:
+                self.set_status(NodeStatus.SUCCESS)
+            else:
+                self.set_status(NodeStatus.FAILURE)
+                self.set_contingency_message('PARAM_NOT_SET')
+        else:
+            self.set_status(NodeStatus.FAILURE)
+            self.set_contingency_message('NODE_NOT_AVAILABLE')
