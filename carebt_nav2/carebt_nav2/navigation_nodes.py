@@ -19,12 +19,10 @@ from carebt.actionNode import ActionNode
 from carebt.nodeStatus import NodeStatus
 from carebt.parallelNode import ParallelNode
 from carebt.rateControlNode import RateControlNode
-from carebt_nav2_pyutil.geometry_utils import euclidean_distance
 from carebt_nav2_pyutil.geometry_utils import calculate_remaining_path_length
 from carebt_nav2_pyutil.geometry_utils import calculate_travel_time
 from carebt_nav2_pyutil.robot_utils import get_current_pose
 from carebt_ros2.rosActionClientActionNode import RosActionClientActionNode
-from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseWithCovarianceStamped
 import math
 from nav2_msgs.action import ComputePathThroughPoses
@@ -66,8 +64,8 @@ class InitPoseAction(ActionNode):
 
     def __worker(self):
         self.__initialpose_pub = self.__bt_runner.node.create_publisher(PoseWithCovarianceStamped,
-                                                                       '/initialpose',
-                                                                       10)
+                                                                        '/initialpose',
+                                                                        10)
         self.__initialpose_pub.publish(self._initial_pose)
 
         self.__tf_buffer = Buffer()
@@ -84,18 +82,17 @@ class InitPoseAction(ActionNode):
 
                 if(abs(trans.transform.translation.x - self._initial_pose.pose.pose.position.x)
                         < math.sqrt(self._initial_pose.pose.covariance[0])
-                and abs(trans.transform.translation.y - self._initial_pose.pose.pose.position.y)
+                   and abs(trans.transform.translation.y - self._initial_pose.pose.pose.position.y)
                         < math.sqrt(self._initial_pose.pose.covariance[7])):
                     # AMCL pose ok
                     self.get_logger().info('{} - AMCL pose ok'
-                                .format(self.__class__.__name__))
+                                           .format(self.__class__.__name__))
                     self.set_status(NodeStatus.SUCCESS)
                     break
-            except TransformException as ex:
+            except TransformException:
                 pass
 
             sleep(0.1)
-
 
     def on_timeout(self) -> None:
         self.__thread_running = False
@@ -360,11 +357,13 @@ class FollowPathAction(RosActionClientActionNode):
         status = future.result().status
 
         if(status == GoalStatus.STATUS_SUCCEEDED):
-            self.get_logger().info('{} - GoalStatus.STATUS_SUCCEEDED'.format(self.__class__.__name__))
+            self.get_logger().info('{} - GoalStatus.STATUS_SUCCEEDED'
+                                   .format(self.__class__.__name__))
             self.set_status(NodeStatus.SUCCESS)
 
         elif(status == GoalStatus.STATUS_ABORTED):
-            self.get_logger().info('{} - GoalStatus.STATUS_ABORTED'.format(self.__class__.__name__))
+            self.get_logger().info('{} - GoalStatus.STATUS_ABORTED'
+                                   .format(self.__class__.__name__))
             # TODO
             # currently there is no way to distinguish between an abort due
             # to a new goal (old goal aborted) and a real abort of a goal
