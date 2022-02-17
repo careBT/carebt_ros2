@@ -99,9 +99,11 @@ class InitPoseAction(ActionNode):
 
     def on_timeout(self) -> None:
         self.__thread_running = False
-        self.__initialpose_pub.destroy()
         self.set_status(NodeStatus.FAILURE)
         self.set_contingency_message('INITIALPOSE_NOT_SET')
+
+    def __del__(self) -> None:
+        self.__initialpose_pub.destroy()
 
 ########################################################################
 
