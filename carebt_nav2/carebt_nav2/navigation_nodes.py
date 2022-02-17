@@ -72,8 +72,7 @@ class InitPoseAction(ActionNode):
 
         self.__tf_buffer = Buffer()
         self.__tf_listener = TransformListener(self.__tf_buffer, self.__bt_runner.node)
-        amcl_pose_ok: bool = False
-        while amcl_pose_ok == False:
+        while True:
             if(not self.__thread_running):
                 break
             try:
@@ -90,8 +89,8 @@ class InitPoseAction(ActionNode):
                     # AMCL pose ok
                     self.get_logger().info('{} - AMCL pose ok'
                                 .format(self.__class__.__name__))
-                    amcl_pose_ok = True
                     self.set_status(NodeStatus.SUCCESS)
+                    break
             except TransformException as ex:
                 pass
 
