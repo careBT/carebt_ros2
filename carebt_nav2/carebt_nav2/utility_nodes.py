@@ -211,4 +211,42 @@ class SetParameterClient(ActionNode):
                 self.set_contingency_message('PARAM_NOT_SET')
         else:
             self.set_status(NodeStatus.FAILURE)
-            self.set_contingency_message('NODE_NOT_AVAILABLE')
+            self.set_contingency_message('SERVICE_NOT_AVAILABLE')
+
+########################################################################
+
+
+class ServiceClient(ActionNode):
+    """Call a ROS2 service.
+
+    Input Parameters
+    ----------------
+    ?service : str
+        The ROS2 service name
+    ?request
+        The service request msg
+
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner, '?service ?type ?request => ?response')
+        self.__bt_runner = bt_runner
+
+    def on_init(self) -> None:
+        self.get_logger().info('{} - call service {} with {} - {}'
+                               .format(self.__class__.__name__,
+                                       self._service,
+                                       self._type,
+                                       self._request))
+        Thread(target=self.__worker, daemon=True).start()
+        self.set_status(NodeStatus.SUSPENDED)
+
+    def __worker(self):
+        self.__client = self.__bt_runner.node.create_client(self._type, self._service)
+        if(self.__client.wait_for_service(timeout_sec=1.0)):
+            req = self._request
+            self._response = self.__client.call(req)
+            self.set_status(NodeStatus.SUCCESS)
+        else:
+            self.set_status(NodeStatus.FAILURE)
+            self.set_contingency_message('SERVICE_NOT_AVAILABLE')
