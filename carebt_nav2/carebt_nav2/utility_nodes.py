@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from threading import Timer
-
 from carebt.actionNode import ActionNode
 from carebt.nodeStatus import NodeStatus
 from carebt_ros2.rosSubscriberActionNode import RosSubscriberActionNode
-from lifecycle_msgs.srv import ChangeState
+from lifecycle_msgs.srv import ChangeState, GetState
 from rcl_interfaces.msg import Parameter
 from rcl_interfaces.srv import SetParameters
 from ros2param.api import get_parameter_value
 from std_msgs.msg import Empty
-import threading
+from threading import Timer, Thread
+from time import sleep
 
 ########################################################################
 
@@ -105,31 +104,37 @@ class LifecycleClient(ActionNode):
 
     Input Parameters
     ----------------
-    ?service : str
-        The nodes lifecycle service name
+    ?node : str
+        The nodes name
     ?id : int
         The status (id) to change into
 
     """
 
     def __init__(self, bt_runner):
-        super().__init__(bt_runner, '?service ?id')
+        super().__init__(bt_runner, '?node ?id')
+        self.__bt_runner = bt_runner
+        self.set_timeout(5000)
 
     def on_init(self) -> None:
         self.get_logger().info('{} - put {} into state {}'
-                               .format(self.__class__.__name__, self._service, self._id))
-        threading.Thread(target=self.__worker, daemon=True).start()
+                               .format(self.__class__.__name__, self._node, self._id))
+        self.__thread_running = True
+        self.__expected_goal_state = [0, 2, 1, 3, 2, 4, 4, 4][self._id]
+        Thread(target=self.__worker, daemon=True).start()
         self.set_status(NodeStatus.SUSPENDED)
 
     def __worker(self):
-        self.__client = self.create_client(ChangeState, self._service)
-        if(self.__client.wait_for_service(timeout_sec=1.0)):
+        self.__change_state_client =\
+            self.__bt_runner.node.create_client(ChangeState, f'/{self._node}/change_state')
+        self.__get_state_client =\
+            self.__bt_runner.node.create_client(GetState, f'/{self._node}/get_state')
+        if(self.__change_state_client.wait_for_service(timeout_sec=1.0)
+           and self.__get_state_client.wait_for_service(timeout_sec=1.0)):
             req = ChangeState.Request()
             req.transition.id = self._id
-            res: ChangeState.Response = self.__client.call(req)
-            if(res.success):
-                self.set_status(NodeStatus.SUCCESS)
-            else:
+            res: ChangeState.Response = self.__change_state_client.call(req)
+            if not res.success:
                 self.set_status(NodeStatus.FAILURE)
                 self.set_contingency_message('CHANGE_STATE_FAILED')
         else:
@@ -137,8 +142,25 @@ class LifecycleClient(ActionNode):
             self.set_status(NodeStatus.FAILURE)
             self.set_contingency_message('SERVICE_NOT_AVAILABLE')
 
+        while True:
+            if(not self.__thread_running):
+                break
+            req = GetState.Request()
+            res: GetState.Response = self.__get_state_client.call(req)
+            if res.current_state.id == self.__expected_goal_state:
+                self.set_status(NodeStatus.SUCCESS)
+                break
+            sleep(0.1)
+
+
+    def on_timeout(self) -> None:
+        self.__thread_running = False
+        self.set_status(NodeStatus.FAILURE)
+        self.set_contingency_message('TIMEOUT')
+
     def __del__(self) -> None:
-        self.__client.destroy()
+        self.__change_state_client.destroy()
+        self.__get_state_client.destroy()
 
 ########################################################################
 
@@ -167,7 +189,7 @@ class SetParameterClient(ActionNode):
                                        self._node,
                                        self._param_name,
                                        self._param_value))
-        threading.Thread(target=self.__worker, daemon=True).start()
+        Thread(target=self.__worker, daemon=True).start()
         self.set_status(NodeStatus.SUSPENDED)
 
     def __worker(self):
