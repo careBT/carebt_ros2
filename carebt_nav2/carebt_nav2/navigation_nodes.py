@@ -105,6 +105,89 @@ class InitPoseAction(ActionNode):
 ########################################################################
 
 
+class GetCurrentPose(ActionNode):
+    """Returns the current pose of the robot.
+
+    Output Parameters
+    -----------------
+    ?pose : geometry_msgs.msg.PoseStamped
+        The current pose
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner, '=> ?pose')
+        self._tf_buffer = Buffer()
+        self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
+        self.set_timeout(3000)
+
+    def on_init(self) -> None:
+        self.__thread_running = True
+        self.__thread = threading.Thread(target=self.__worker)
+        self.__thread.start()
+        self.set_status(NodeStatus.SUSPENDED)
+
+    def __worker(self):
+        while True:
+            if(not self.__thread_running):
+                break
+            # get current pose
+            robot_frame = 'base_link'
+            global_frame = 'map'
+            self._pose = get_current_pose(global_frame,
+                                        robot_frame,
+                                        self._tf_buffer)
+            if(self._pose is not None):
+                self.set_status(NodeStatus.SUCCESS)
+                break
+
+            sleep(0.1)
+
+    def on_timeout(self) -> None:
+        self.__thread_running = False
+        self.set_status(NodeStatus.FAILURE)
+        self.set_contingency_message('CURRENT_POSE_NOT_AVAILABLE')
+
+########################################################################
+
+
+class GetPoseWithCovFromPose(ActionNode):
+    """Returns a pose with covariance.
+
+    Input Parameters
+    ----------------
+    ?pose : geometry_msgs.msg.PoseStamped
+        The pose
+    
+    ?var_x : float
+        The variance of x [m^2]
+    
+    ?var_y : float
+        The variance of y [m^2]
+    
+    ?var_yaw : float
+        The variance of yaw [rad^2]
+
+    Output Parameters
+    -----------------
+    ?pose_with_cov : geometry_msgs.msg.PoseWithCovarianceStamped
+        The pose with covariance
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner, '?pose ?var_x ?var_y ?var_yaw => ?pose_with_cov')
+
+    def on_init(self) -> None:
+        self._pose_with_cov = PoseWithCovarianceStamped()
+        self._pose_with_cov.header = self._pose.header
+        self._pose_with_cov.pose.pose = self._pose.pose
+        self._pose_with_cov.pose.covariance[0] = self._var_x
+        self._pose_with_cov.pose.covariance[7] = self._var_y
+        self._pose_with_cov.pose.covariance[35] = self._var_yaw
+        self.set_status(NodeStatus.SUCCESS)
+
+########################################################################
+
+
 class ComputePathToPoseAction(RosActionClientActionNode):
     """Provides a path to the goal position.
 
