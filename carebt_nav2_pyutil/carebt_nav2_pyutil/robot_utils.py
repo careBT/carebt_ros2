@@ -57,5 +57,5 @@ def get_current_pose(global_frame: str,
     current_pose.pose.orientation.z = trans.transform.rotation.z
     current_pose.pose.orientation.w = trans.transform.rotation.w
     current_pose.header.stamp = now.to_msg()
-    current_pose.header.frame_id = robot_frame
+    current_pose.header.frame_id = global_frame
     return current_pose
