@@ -50,7 +50,7 @@ class WaitAction(ActionNode):
 
     Input Parameters
     ----------------
-    ?ime : int (ms)
+    ?time : int (ms)
         Milliseconds to wait
 
     """
