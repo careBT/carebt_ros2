@@ -15,10 +15,19 @@
 from owlready2 import *
 
 
-person = get_ontology('http://test.org/person.owl#')
+demo1 = get_ontology('http://test.org/demo1.owl#')
 
-with person:
+with demo1:
+    class Robot(Thing): pass
     class Person(Thing): pass
+    
+    # Robot properties
+    class robot_id(Robot >> int, FunctionalProperty): pass
+    class pose_rosstr(Robot >> str, FunctionalProperty): pass
+    class battery_soc_rosstr(Robot >> str, FunctionalProperty): pass
+    class status(Robot >> str, FunctionalProperty): pass
+
+    # Person properties
     class first_name(Person >> str, FunctionalProperty): pass
     class age (Person >> int, FunctionalProperty): pass
     class size (Person >> float, FunctionalProperty): pass
@@ -57,6 +66,7 @@ Person(first_name = 'Dave', age = 16, size = 1.75, weight = 64.0)
 Person(first_name = 'Eve', age = 23, size = 1.85, weight = 78.0)
 Person(first_name = 'Frank', age = 23, size = 1.75, weight = 80.0)
 
+Robot(robot_id = 1, )
 
 ## save
-person.save('src/carebt_ros2/carebt_kb/test/data/person.owl', format = 'rdfxml')
+demo1.save('src/carebt_ros2/carebt_kb/test/data/demo1.owl', format = 'rdfxml')
