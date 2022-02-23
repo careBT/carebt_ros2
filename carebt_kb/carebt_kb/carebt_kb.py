@@ -14,7 +14,7 @@
 
 from carebt_msgs.srv import KbCrud
 from carebt_msgs.action import KbEvalState
-from carebt_kb.simple_kb import SimpleKb
+from carebt_kb.owlready2_kb import OwlReady2Kb
 from carebt_kb.plugin_base import import_class
 import json
 import rclpy
@@ -40,7 +40,7 @@ class KbServer(Node):
         self.__event = threading.Event()
 
         # declare parameters
-        self.declare_parameter(KB_FILE_PARAM, 'memory.json')
+        self.declare_parameter(KB_FILE_PARAM, 'src/carebt_ros2/carebt_kb/test/data/person.owl')
         self.declare_parameter(KB_PERSIST_PARAM, False)
         # TODO: empty string list, instead of list with one empty string
         self.declare_parameter(KB_PLUGIN_LIST_PARAM, [''])
@@ -51,9 +51,8 @@ class KbServer(Node):
 
         # create SimpleKb
         self.get_logger().info(f'create kb from file: {kb_file}, persist = {kb_persist}')
-        self.__simple_kb = SimpleKb(kb_file, kb_persist)
-        self.get_logger().info(f'kb created with {self.__simple_kb.size()} bytes; '
-                               + f'{self.__simple_kb.count()} entries')
+        self.__simple_kb = OwlReady2Kb(kb_file, kb_persist)
+        self.get_logger().info(f'kb created.')
 
         # create crud service
         self.create_service(KbCrud, 'crud', self.__crud_query_callback)

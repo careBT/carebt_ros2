@@ -27,7 +27,7 @@ class TestKbServer():
     @pytest.fixture(scope="class", autouse=True)
     def execute_before_any_test(self):
         rclpy.init(args=['carebt_kb', '--ros-args',
-                         '-p', 'kb_file:=src/carebt_ros2/carebt_kb/test/data/memory.json',
+                         '-p', 'kb_file:=src/carebt_ros2/carebt_kb/test/data/person.owl',
                          '-p', 'kb_persist:=False'])
 
     def test_read_bob(self, execute_before_any_test):
@@ -36,16 +36,18 @@ class TestKbServer():
         res = KbCrud.Response()
 
         req.operation = 'READ'
-        filter = {'is-a': 'Person', 'name': 'Bob'}
+        filter = {'type': 'person.Person', 'first_name': 'Bob'}
         req.filter = json.dumps(filter)
         result = kbserver._KbServer__crud_query_callback(req, res)
         result = json.loads(result.response)
 
         assert len(result) == 1
-        assert len(result[0]) == 3
-        assert result[0]['is-a'] == 'Person'
-        assert result[0]['name'] == 'Bob'
-        assert result[0]['age'] == 39
+        assert len(result[0]) == 6
+        assert result[0]['is_a'] == ['person.Person']
+        assert result[0]['first_name'] == 'Bob'
+        assert result[0]['age'] == 21
+        assert math.isclose(result[0]['size'], 1.8)
+        assert math.isclose(result[0]['weight'], 95.0)
 
     def test_read_xxx(self, execute_before_any_test):
         kbserver = KbServer('carebt_kb')
@@ -53,7 +55,7 @@ class TestKbServer():
         res = KbCrud.Response()
 
         req.operation = 'READ'
-        filter = {'is-a': 'Person', 'name': 'XXX'}
+        filter = {'type': 'person.Person', 'first_name': 'XXX'}
         req.filter = json.dumps(filter)
         result = kbserver._KbServer__crud_query_callback(req, res)
         result = json.loads(result.response)
@@ -66,7 +68,7 @@ class TestKbServer():
         res = KbCrud.Response()
 
         req.operation = 'UPDATE'
-        filter = {'is-a': 'Person', 'name': 'Bob'}
+        filter = {'type': 'person.Person', 'first_name': 'Bob'}
         data = {'age': 55}
         req.operation = 'UPDATE'
         req.filter = json.dumps(filter)
@@ -76,36 +78,9 @@ class TestKbServer():
         result = json.loads(result.response)
 
         assert len(result) == 1
-        assert len(result[0]) == 3
-        assert result[0]['is-a'] == 'Person'
-        assert result[0]['name'] == 'Bob'
+        assert len(result[0]) == 6
+        assert result[0]['is_a'] == ['person.Person']
+        assert result[0]['first_name'] == 'Bob'
         assert result[0]['age'] == 55
-
-    def test_update_add_pose_to_bob(self, execute_before_any_test):
-        kbserver = KbServer('carebt_kb')
-        req = KbCrud.Request()
-        res = KbCrud.Response()
-
-        req.operation = 'UPDATE'
-        filter = {'is-a': 'Person', 'name': 'Bob'}
-        p = PoseStamped()
-        p.pose.position.x = 1.0
-        p.pose.position.y = 2.0
-        p_dict = message_converter.convert_ros_message_to_dictionary(p)
-        data = {'pose': p_dict}
-        req.operation = 'UPDATE'
-        req.filter = json.dumps(filter)
-        req.data = json.dumps(data)
-
-        result = kbserver._KbServer__crud_query_callback(req, res)
-        result = json.loads(result.response)
-
-        p: PoseStamped = message_converter.convert_dictionary_to_ros_message(
-            'geometry_msgs/msg/PoseStamped', result[0]['pose'])
-
-        assert len(result) == 1
-        assert len(result[0]) == 4
-        assert math.isclose(result[0]['pose']['pose']['position']['x'], 1.0)
-        assert math.isclose(result[0]['pose']['pose']['position']['y'], 2.0)
-        assert math.isclose(p.pose.position.x, 1.0)
-        assert math.isclose(p.pose.position.y, 2.0)
+        assert math.isclose(result[0]['size'], 1.8)
+        assert math.isclose(result[0]['weight'], 95.0)

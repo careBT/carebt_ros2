@@ -8,6 +8,7 @@
   <license>Apache License 2.0</license>
 
   <depend>carebt_msgs</depend>
+  <depend>owlready2</depend>
   <depend>rclpy</depend>
   <depend>rclpy_message_converter</depend>
 
