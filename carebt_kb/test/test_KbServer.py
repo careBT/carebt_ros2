@@ -14,6 +14,11 @@
 
 from carebt_msgs.srv import KbCrud
 from carebt_kb.carebt_kb import KbServer
+from carebt_kb.kb_helper import create_read_request
+from carebt_kb.kb_helper import create_update_request
+from carebt_kb.kb_helper import str_from_ros_msg
+from carebt_kb.kb_helper import ros_msg_from_str
+from carebt_kb.kb_helper import dict_from_response
 from geometry_msgs.msg import PoseStamped
 import json
 import math
@@ -27,23 +32,20 @@ class TestKbServer():
     @pytest.fixture(scope="class", autouse=True)
     def execute_before_any_test(self):
         rclpy.init(args=['carebt_kb', '--ros-args',
-                         '-p', 'kb_file:=src/carebt_ros2/carebt_kb/test/data/person.owl',
+                         '-p', 'kb_file:=src/carebt_ros2/carebt_kb/test/data/demo1.owl',
                          '-p', 'kb_persist:=False'])
 
     def test_read_bob(self, execute_before_any_test):
         kbserver = KbServer('carebt_kb')
-        req = KbCrud.Request()
-        res = KbCrud.Response()
 
-        req.operation = 'READ'
-        filter = {'type': 'person.Person', 'first_name': 'Bob'}
-        req.filter = json.dumps(filter)
-        result = kbserver._KbServer__crud_query_callback(req, res)
-        result = json.loads(result.response)
+        filter = {'type': 'demo1.Person', 'first_name': 'Bob'}
+        req = create_read_request(filter)
+        res = kbserver._KbServer__crud_query_callback(req, KbCrud.Response())
+        result = dict_from_response(res)
 
         assert len(result) == 1
         assert len(result[0]) == 6
-        assert result[0]['is_a'] == ['person.Person']
+        assert result[0]['is_a'] == ['demo1.Person']
         assert result[0]['first_name'] == 'Bob'
         assert result[0]['age'] == 21
         assert math.isclose(result[0]['size'], 1.8)
@@ -51,36 +53,51 @@ class TestKbServer():
 
     def test_read_xxx(self, execute_before_any_test):
         kbserver = KbServer('carebt_kb')
-        req = KbCrud.Request()
-        res = KbCrud.Response()
 
-        req.operation = 'READ'
-        filter = {'type': 'person.Person', 'first_name': 'XXX'}
-        req.filter = json.dumps(filter)
-        result = kbserver._KbServer__crud_query_callback(req, res)
-        result = json.loads(result.response)
+        filter = {'type': 'demo1.Person', 'first_name': 'XXX'}
+        req = create_read_request(filter)
+        res = kbserver._KbServer__crud_query_callback(req, KbCrud.Response())
+        result = dict_from_response(res)
 
         assert len(result) == 0
 
     def test_update_age_of_bob(self, execute_before_any_test):
         kbserver = KbServer('carebt_kb')
-        req = KbCrud.Request()
-        res = KbCrud.Response()
 
-        req.operation = 'UPDATE'
-        filter = {'type': 'person.Person', 'first_name': 'Bob'}
+        filter = {'type': 'demo1.Person', 'first_name': 'Bob'}
         data = {'age': 55}
-        req.operation = 'UPDATE'
-        req.filter = json.dumps(filter)
-        req.data = json.dumps(data)
-
-        result = kbserver._KbServer__crud_query_callback(req, res)
-        result = json.loads(result.response)
+        req = create_update_request(filter, data)
+        res = kbserver._KbServer__crud_query_callback(req, KbCrud.Response())
+        result = dict_from_response(res)
 
         assert len(result) == 1
         assert len(result[0]) == 6
-        assert result[0]['is_a'] == ['person.Person']
+        assert result[0]['is_a'] == ['demo1.Person']
         assert result[0]['first_name'] == 'Bob'
         assert result[0]['age'] == 55
         assert math.isclose(result[0]['size'], 1.8)
         assert math.isclose(result[0]['weight'], 95.0)
+
+    def test_update_add_pose_to_robot_1(self, execute_before_any_test):
+        kbserver = KbServer('carebt_kb')
+
+        filter = {'type': 'demo1.Robot', 'robot_id': 1}
+        p = PoseStamped()
+        p.pose.position.x = 1.0
+        p.pose.position.y = 2.0
+        data = {'pose_rosstr': str_from_ros_msg(p), 'status': 'Happy'}
+        req = create_update_request(filter, data)
+        res = kbserver._KbServer__crud_query_callback(req, KbCrud.Response())
+        result = dict_from_response(res)
+
+        print(result)
+        p: PoseStamped = ros_msg_from_str('geometry_msgs/msg/PoseStamped', result[0]['pose_rosstr'])
+        
+        assert len(result) == 1
+        assert len(result[0]) == 5
+        assert result[0]['robot_id'] == 1
+        assert result[0]['is_a'] == ['demo1.Robot']
+        assert result[0]['status'] == 'Happy'
+        assert isinstance(result[0]['pose_rosstr'], str)
+        assert math.isclose(p.pose.position.x, 1.0)
+        assert math.isclose(p.pose.position.y, 2.0)
