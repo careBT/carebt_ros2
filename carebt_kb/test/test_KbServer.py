@@ -16,9 +16,9 @@ from carebt_msgs.srv import KbQuery
 from carebt_kb.carebt_kb import KbServer
 from carebt_kb.kb_helper import create_search_request
 from carebt_kb.kb_helper import create_update_request
-from carebt_kb.kb_helper import str_from_ros_msg
-from carebt_kb.kb_helper import ros_msg_from_str
-from carebt_kb.kb_helper import dict_from_response
+from carebt_kb.kb_helper import json_dict_str_from_ros_msg
+from carebt_kb.kb_helper import ros_msg_from_dict_str
+from carebt_kb.kb_helper import dict_from_kb_response
 from geometry_msgs.msg import PoseStamped
 import json
 import math
@@ -41,7 +41,7 @@ class TestKbServer():
         filter = {'type': 'demo1.Person', 'first_name': 'Bob'}
         req = create_search_request(filter)
         res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
-        result = dict_from_response(res)
+        result = dict_from_kb_response(res)
 
         assert len(result) == 1
         assert len(result[0]) == 6
@@ -57,7 +57,7 @@ class TestKbServer():
         filter = {'type': 'demo1.Person', 'first_name': 'XXX'}
         req = create_search_request(filter)
         res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
-        result = dict_from_response(res)
+        result = dict_from_kb_response(res)
 
         assert len(result) == 0
 
@@ -68,7 +68,7 @@ class TestKbServer():
         data = {'age': 55}
         req = create_update_request(filter, data)
         res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
-        result = dict_from_response(res)
+        result = dict_from_kb_response(res)
 
         assert len(result) == 1
         assert len(result[0]) == 6
@@ -85,13 +85,15 @@ class TestKbServer():
         p = PoseStamped()
         p.pose.position.x = 1.0
         p.pose.position.y = 2.0
-        data = {'pose_rosstr': str_from_ros_msg(p), 'status': 'Happy'}
+        data = {'pose_rosstr': json_dict_str_from_ros_msg(p), 'status': 'Happy'}
+        print(f'### data:  {data}')
         req = create_update_request(filter, data)
         res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
-        result = dict_from_response(res)
+        result = dict_from_kb_response(res)
 
-        print(result)
-        p: PoseStamped = ros_msg_from_str('geometry_msgs/msg/PoseStamped', result[0]['pose_rosstr'])
+        print('result', result)
+        print('result[0]["pose_rosstr"]', result[0]['pose_rosstr'])
+        p: PoseStamped = ros_msg_from_dict_str('geometry_msgs/msg/PoseStamped', result[0]['pose_rosstr'])
         
         assert len(result) == 1
         assert len(result[0]) == 5
