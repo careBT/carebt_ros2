@@ -21,6 +21,8 @@ with demo1:
     class Robot(Thing): pass
     class Person(Thing): pass
     
+    AllDisjoint([Robot, Person])  # Thing's
+    
     # Robot properties
     class robot_id(Robot >> int, FunctionalProperty): pass
     class pose_rosstr(Robot >> str, FunctionalProperty): pass

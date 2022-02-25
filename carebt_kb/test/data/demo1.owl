@@ -65,6 +65,7 @@
 
 <owl:Class rdf:about="#Robot">
   <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+  <owl:disjointWith rdf:resource="#Person"/>
 </owl:Class>
 
 <owl:Class rdf:about="#Person">
