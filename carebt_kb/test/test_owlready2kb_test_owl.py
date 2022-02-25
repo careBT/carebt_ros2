@@ -64,7 +64,7 @@ class TestOwlReady2Kb_TestOwl():
                         'has_subtest': subtests
                     })
 
-        r1 = kb.read({'type': 'test.Test', 'test_int': 1})
+        r1 = kb.search({'type': 'test.Test', 'test_int': 1})
         # functional
         assert isinstance(r1[0]['test_int'], int)
         assert r1[0]['test_int'] == 1
@@ -118,7 +118,7 @@ class TestOwlReady2Kb_TestOwl():
 
         # Test
         t = kb.create({'type': 'test.Test', 'test_int': 1})
-        r1 = kb.read({'type': 'test.Test', 'test_int': 1})
+        r1 = kb.search({'type': 'test.Test', 'test_int': 1})
 
     def test_read_unknown_slot(self):
         # setup
@@ -127,7 +127,7 @@ class TestOwlReady2Kb_TestOwl():
 
         # Test
         t = kb.create({'type': 'test.Test', 'test_int': 1})
-        r1 = kb.read({'type': 'test.Test', 'xxx': 1})
+        r1 = kb.search({'type': 'test.Test', 'xxx': 1})
         assert len(r1) == 0
 
     def test_update(self):
@@ -137,7 +137,7 @@ class TestOwlReady2Kb_TestOwl():
 
         # Test
         kb.create({'type': 'test.Test', 'test_int': 1})
-        r1 = kb.read({'type': 'test.Test'})
+        r1 = kb.search({'type': 'test.Test'})
         assert len(r1) == 1
 
         # subtest
@@ -180,7 +180,7 @@ class TestOwlReady2Kb_TestOwl():
                    'has_one_subtest': subtest,
                    'has_subtest': subtests
                   })
-        r1 = kb.read({'type': 'test.Test'})
+        r1 = kb.search({'type': 'test.Test'})
         assert len(r1) == 1
         # functional
         assert isinstance(r1[0]['test_int'], int)

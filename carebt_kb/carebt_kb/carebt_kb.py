@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from carebt_msgs.srv import KbCrud
+from carebt_msgs.srv import KbQuery
 from carebt_msgs.action import KbEvalState
 from carebt_kb.owlready2_kb import OwlReady2Kb
 from carebt_kb.plugin_base import import_class
@@ -55,7 +55,7 @@ class KbServer(Node):
         self.get_logger().info(f'kb created.')
 
         # create crud service
-        self.create_service(KbCrud, 'crud', self.__crud_query_callback)
+        self.create_service(KbQuery, 'crud', self.__crud_query_callback)
 
         # create wait_state action server
         ActionServer(
@@ -121,7 +121,7 @@ class KbServer(Node):
 
     ## CRUD query callback
 
-    def __crud_query_callback(self, request: KbCrud.Request, response: KbCrud.Response):
+    def __crud_query_callback(self, request: KbQuery.Request, response: KbQuery.Response):
         self.get_logger().info(
             f'Incoming request: {request.operation} {request.filter} {request.data}')
 
@@ -131,9 +131,14 @@ class KbServer(Node):
             self.create(frame)
             result = []
             response.response = json.dumps(result)
+        # search
+        elif(request.operation.upper() == 'SEARCH'):
+            filter = json.loads(request.filter)
+            result = self.search(filter)
+            response.response = json.dumps(result)
         # read
         elif(request.operation.upper() == 'READ'):
-            filter = json.loads(request.filter)
+            filter = json.loads(request.filter)['items']
             result = self.read(filter)
             response.response = json.dumps(result)
         # update
@@ -159,13 +164,16 @@ class KbServer(Node):
         self.__simple_kb.create(frame)
         self.__kb_updated()
 
+    def search(self, filter):
+        return self.__simple_kb.search(filter)
+
     def read(self, filter):
         return self.__simple_kb.read(filter)
 
     def update(self, filter, update) -> None:
         self.__simple_kb.update(filter, update)
         self.__kb_updated()
-        return self.__simple_kb.read(filter)
+        return self.__simple_kb.search(filter)
 
     def delete(self, filter):
         self.__simple_kb.delete(filter)

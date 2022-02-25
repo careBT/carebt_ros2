@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from carebt_msgs.srv import KbCrud
+from carebt_msgs.srv import KbQuery
 import json
 from rclpy_message_converter import message_converter
 
-def dict_from_response(response: KbCrud.Response):
+def dict_from_response(response: KbQuery.Response):
     return json.loads(response.response)
     
 def ros_msg_from_str(msg_type: str, ros_msg_str: str):
@@ -28,26 +28,32 @@ def str_from_ros_msg(ros_msg):
     return json.dumps(msg_dict).replace('"', '\\"')
 
 def create_create_request(frame: dict):
-    req = KbCrud.Request
+    req = KbQuery.Request
     req.operation = 'CREATE'
     req.filter = json.dumps(frame)
     return req
 
-def create_read_request(filter: dict):
-    req = KbCrud.Request
-    req.operation = 'READ'
+def create_search_request(filter: dict):
+    req = KbQuery.Request
+    req.operation = 'SEARCH'
     req.filter = json.dumps(filter)
     return req
 
+def create_read_request(items: list):
+    req = KbQuery.Request
+    req.operation = 'READ'
+    req.filter = json.dumps(f'"items": {items}')
+    return req
+
 def create_update_request(filter: dict, data: dict):
-    req = KbCrud.Request
+    req = KbQuery.Request
     req.operation = 'UPDATE'
     req.filter = json.dumps(filter)
     req.data = json.dumps(data)
     return req
 
 def create_delete_request(filter: dict):
-    req = KbCrud.Request
+    req = KbQuery.Request
     req.operation = 'DELETE'
     req.filter = json.dumps(filter)
     return req

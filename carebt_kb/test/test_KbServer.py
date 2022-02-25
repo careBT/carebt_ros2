@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from carebt_msgs.srv import KbCrud
+from carebt_msgs.srv import KbQuery
 from carebt_kb.carebt_kb import KbServer
-from carebt_kb.kb_helper import create_read_request
+from carebt_kb.kb_helper import create_search_request
 from carebt_kb.kb_helper import create_update_request
 from carebt_kb.kb_helper import str_from_ros_msg
 from carebt_kb.kb_helper import ros_msg_from_str
@@ -39,8 +39,8 @@ class TestKbServer():
         kbserver = KbServer('carebt_kb')
 
         filter = {'type': 'demo1.Person', 'first_name': 'Bob'}
-        req = create_read_request(filter)
-        res = kbserver._KbServer__crud_query_callback(req, KbCrud.Response())
+        req = create_search_request(filter)
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
         result = dict_from_response(res)
 
         assert len(result) == 1
@@ -55,8 +55,8 @@ class TestKbServer():
         kbserver = KbServer('carebt_kb')
 
         filter = {'type': 'demo1.Person', 'first_name': 'XXX'}
-        req = create_read_request(filter)
-        res = kbserver._KbServer__crud_query_callback(req, KbCrud.Response())
+        req = create_search_request(filter)
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
         result = dict_from_response(res)
 
         assert len(result) == 0
@@ -67,7 +67,7 @@ class TestKbServer():
         filter = {'type': 'demo1.Person', 'first_name': 'Bob'}
         data = {'age': 55}
         req = create_update_request(filter, data)
-        res = kbserver._KbServer__crud_query_callback(req, KbCrud.Response())
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
         result = dict_from_response(res)
 
         assert len(result) == 1
@@ -87,7 +87,7 @@ class TestKbServer():
         p.pose.position.y = 2.0
         data = {'pose_rosstr': str_from_ros_msg(p), 'status': 'Happy'}
         req = create_update_request(filter, data)
-        res = kbserver._KbServer__crud_query_callback(req, KbCrud.Response())
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
         result = dict_from_response(res)
 
         print(result)
