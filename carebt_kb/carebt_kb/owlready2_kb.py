@@ -55,18 +55,6 @@ class OwlReady2Kb():
         dict_str += '], '
         # iterate over properties
         for prop in clazz.get_properties():
-            # print(f'{prop.name} - {prop.domain} - {prop.range} - {clazz.__class__}')
-            # # TODO Problem with FusionClass
-            # bases = clazz.__class__.__bases__
-            # print(bases)
-            # for c in bases:
-            #     print(c.__class__.__bases__)
-            # domain_index = prop.domain.index(clazz.__class__)
-            # range = prop.range
-            # if len(range) == 1:
-            #     key_type = range[0]
-            # else:
-            #     key_type = range[domain_index]
             is_functional = prop.is_functional_for(clazz.__class__)
             key_type = prop.range[0]
             value = eval(f"self.{clazz}.{prop.name}")
@@ -152,19 +140,10 @@ class OwlReady2Kb():
                 print(f'The key {key} is not part of the ontology.')
                 continue
             if key not in self.OWL_KEYWORDS:
-                #print(f'{key} = {frame[key]},')
-                #domain_index = eval(f'self.{self.__onto}.{key}.domain.index(self.{frame["type"]})')
-                #print(f'domain = {domain}')
                 range = eval(f'self.{self.__onto}.{key}.range')
-                #print(f'range = {range}')
                 clazz = frame['type']
                 clazz  # supress unused variable warning 
                 is_functional = eval(f'self.{self.__onto}.{key}.is_functional_for(clazz)')
-                #print(f'is_functional = {is_functional}')
-                # if len(range) == 1:
-                #     key_type = range[0]
-                # else:
-                #     key_type = range[domain_index]
                 key_type = range[0]
                 # owlready2.entity.ThingClass
                 if key_type.__class__ is owlready2.entity.ThingClass:
@@ -230,98 +209,16 @@ class OwlReady2Kb():
             else:
                 print(f'create - do not use key: {key}')
         return typed_dict
-            
-    def __dict_to_onto_str(self, frame) -> str:
-        onto_str: str = ''
-        onto_str += f'self.{frame["type"]}('
-        for key in frame.keys():
-            if key == 'type':
+
+    def __update(self, item, update):
+        typed_update = self.__dict_to_typed_dict(update)
+        for k in typed_update.keys():
+            if k in ['type']:
                 continue
-            if eval(f'self.{self.__onto}.{key}') == None:
-                print(f'The key {key} is not part of the ontology.')
-                continue
-            if key not in self.OWL_KEYWORDS:
-                #print(f'{key} = {frame[key]},')
-                #domain_index = eval(f'self.{self.__onto}.{key}.domain.index(self.{frame["type"]})')
-                #print(f'domain = {domain}')
-                range = eval(f'self.{self.__onto}.{key}.range')
-                #print(f'range = {range}')
-                is_functional = eval(f'self.{self.__onto}.{key}.is_functional_for(self.{frame["type"]})')
-                #print(f'is_functional = {is_functional}')
-                # if len(range) == 1:
-                #     key_type = range[0]
-                # else:
-                #     key_type = range[domain_index]
-                key_type = range[0]
-                # owlready2.entity.ThingClass
-                if key_type.__class__ is owlready2.entity.ThingClass:
-                    if is_functional:
-                        onto_str += f'{key} = self.{frame[key]}, '
-                    else:
-                        list_str = '['
-                        for item in frame[key]:
-                            list_str += f'self.{item}, '
-                        list_str += ']'
-                        onto_str += f'{key} = {list_str}, '
-                # owlready2.util.normstr
-                elif issubclass(key_type, owlready2.util.normstr):
-                    if is_functional:
-                        onto_str += f'{key} = "{frame[key]}", '
-                    else:
-                        onto_str += f'{key} = {frame[key]}, '
-                # owlready2.util.locstr
-                elif issubclass(key_type, owlready2.util.locstr):
-                    list_str = '['
-                    for item in frame[key]:
-                        list_str += f'locstr({item}), '
-                    list_str += ']'
-                    onto_str += f'{key} = {list_str}, '
-                # int, float, bool
-                elif issubclass(key_type, (int, float, bool)):
-                    onto_str += f'{key} = {frame[key]}, '
-                # str
-                elif issubclass(key_type, (str)):
-                    if is_functional:
-                        onto_str += f'{key} = "{frame[key]}", '
-                    else:
-                        onto_str += f'{key} = {frame[key]}, '
-                # datetime.datetime
-                elif issubclass(key_type, (datetime.datetime)):
-                    if is_functional:
-                        onto_str += f'{key} = datetime.datetime.fromisoformat("{frame[key]}"), '
-                    else:
-                        list_str = '['
-                        for item in frame[key]:
-                            list_str += f'datetime.datetime.fromisoformat("{item}"), '
-                        list_str += ']'
-                        onto_str += f'{key} = {list_str}, '
-                # datetime.date
-                elif issubclass(key_type, (datetime.date)):
-                    if is_functional:
-                        onto_str += f'{key} = datetime.date.fromisoformat("{frame[key]}"), '
-                    else:
-                        list_str = '['
-                        for item in frame[key]:
-                            list_str += f'datetime.date.fromisoformat("{item}"), '
-                        list_str += ']'
-                        onto_str += f'{key} = {list_str}, '
-                # datetime.time
-                elif issubclass(key_type, (datetime.time)):
-                    if is_functional:
-                        onto_str += f'{key} = datetime.time.fromisoformat("{frame[key]}"), '
-                    else:
-                        list_str = '['
-                        for item in frame[key]:
-                            list_str += f'datetime.time.fromisoformat("{item}"), '
-                        list_str += ']'
-                        onto_str += f'{key} = {list_str}, '
-                # unknown
-                else:
-                    print('unknown type')
+            if k not in self.OWL_KEYWORDS:
+                exec(f'self.{item}.{k} = {typed_update[k]}')
             else:
-                print(f'create - do not use key: {key}')
-        onto_str += ')'
-        return onto_str
+                print(f'update - do not use key: {k}')
 
     def __sync_to_file(self):
         if self.__sync_on:
@@ -331,12 +228,14 @@ class OwlReady2Kb():
 
     def create(self, frame) -> str:
         if 'type' not in frame:
-            print(f'To ceate a new item a type is required.')
+            print(f'To create a new item a type is required.')
             return None
         else:
-            onto_str = self.__dict_to_onto_str(frame)
-            #print(f'eval(onto_str): {onto_str}')
+            onto_str = f'self.{frame["type"]}()'
+            # create item
             item = eval(onto_str)
+            # update item
+            self.__update(item, frame)
             self.__sync_to_file()
             return str(item)
 
@@ -352,18 +251,11 @@ class OwlReady2Kb():
             o = eval(f'self.{i}')
             rtrn_items.append(self.__onto_to_dict(o))
         return rtrn_items
-
+    
     def update(self, filter, update):
         for item in self.__get_items(filter):
             update['type'] = eval(f'self.{item}.__class__')
-            typed_update = self.__dict_to_typed_dict(update)
-            for k in typed_update.keys():
-                if k in ['type']:
-                    continue
-                if k not in self.OWL_KEYWORDS:
-                    exec(f'self.{item}.{k} = {typed_update[k]}')
-                else:
-                    print(f'update - do not use key: {k}')
+            self.__update(item, update)
         self.__sync_to_file()
 
     def delete(self, filter):
