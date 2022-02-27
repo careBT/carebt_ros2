@@ -19,6 +19,11 @@ from carebt_kb.owlready2_kb import OwlReady2Kb
 
 class TestOwlReady2Kb_TestOwl():
 
+    def test_initialize(self):
+        # setup
+        kb = OwlReady2Kb('src/carebt_ros2/carebt_kb/test/data/test.owl')
+        assert len(list(kb.test.individuals())) == 0
+
     def test_create_individuals(self):
         # setup
         kb = OwlReady2Kb('src/carebt_ros2/carebt_kb/test/data/test.owl')
