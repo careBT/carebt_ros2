@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from carebt_kb.kb_helper import json_dict_str_from_ros_msg
 from carebt_kb.plugin_base import import_class
 from carebt_kb.plugin_base import PluginBase
 import functools
+import json
 from rclpy.clock import Clock
 from rclpy_message_converter import message_converter
+import rclpy_message_converter
 
 KB_DATA_GATHERER_LIST_PARAM = 'DataGatherer.data_gatherer'
 
@@ -60,18 +63,18 @@ class GenericDataGatherer(PluginBase):
                 self.data_gatherer_callback, slot, kb_filter, max_items), 10)
 
     def data_gatherer_callback(self, slot, kb_filter, max_items, msg):
-        self._kb_server.get_logger().debug(
+        self._kb_server.get_logger().info(
             f'GenericDataGatherer - Incoming topic= {msg}; slot= {slot}, max_items= {max_items}')
-        msg_dict = message_converter.convert_ros_message_to_dictionary(msg)
         filter = eval(kb_filter)
-        if(max_items == 1):    
-            update = {slot: {'ts': Clock().now().nanoseconds, 'data': msg_dict}}
+        if(max_items == 1):
+            update = {slot: json_dict_str_from_ros_msg(msg)}
         else:
-            result = self._kb_server.read(filter)
+            result = self._kb_server.search(filter)
             items = []
-            if(len(result) >= 1):
+            if(len(result) >= 1 and slot in result[0]):
                 items = result[0][slot]
-            items.append({'ts': Clock().now().nanoseconds, 'data': msg_dict})
+            #items.append(str(message_converter.convert_ros_message_to_dictionary(msg)))
+            items.append(message_converter.convert_ros_message_to_dictionary(msg))
             if(len(items) > max_items):
                 del items[0]
             update = {slot: items}

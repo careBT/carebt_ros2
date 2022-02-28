@@ -17,7 +17,6 @@ from carebt_kb.carebt_kb import KbServer
 from carebt_kb.kb_helper import create_search_request
 from carebt_kb.kb_helper import create_update_request
 from carebt_kb.kb_helper import json_dict_str_from_ros_msg
-from carebt_kb.kb_helper import ros_msg_from_dict_str
 from carebt_kb.kb_helper import dict_from_kb_response
 from geometry_msgs.msg import PoseStamped
 import json
@@ -93,13 +92,13 @@ class TestKbServer():
 
         print('result', result)
         print('result[0]["pose_rosstr"]', result[0]['pose_rosstr'])
-        p: PoseStamped = ros_msg_from_dict_str('geometry_msgs/msg/PoseStamped', result[0]['pose_rosstr'])
+        p: PoseStamped = message_converter.convert_dictionary_to_ros_message('geometry_msgs/msg/PoseStamped', result[0]['pose_rosstr'])
         
         assert len(result) == 1
         assert len(result[0]) == 5
         assert result[0]['robot_id'] == 1
         assert result[0]['is_a'] == ['demo1.Robot']
         assert result[0]['status'] == 'Happy'
-        assert isinstance(result[0]['pose_rosstr'], str)
+        assert isinstance(result[0]['pose_rosstr'], dict)
         assert math.isclose(p.pose.position.x, 1.0)
         assert math.isclose(p.pose.position.y, 2.0)

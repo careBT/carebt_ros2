@@ -21,6 +21,7 @@ import threading
 
 from carebt_kb.plugin_base import PluginBase
 from datetime import datetime
+from carebt_kb.kb_helper import json_dict_str_from_ros_msg
 from geometry_msgs.msg import TwistStamped
 from nav_msgs.msg import Odometry
 from rclpy.duration import Duration
@@ -129,8 +130,10 @@ class OdomSmoother(PluginBase):
         
         current_ts = datetime.now()
         if(int((current_ts - self.__last_kb_update).total_seconds() * 1000) >= self.__kb_update_rate_ms):
-            msg_dict = message_converter.convert_ros_message_to_dictionary(self.__twist_smoothed)
+            # msg_dict = message_converter.convert_ros_message_to_dictionary(self.__twist_smoothed)
             filter = eval(self.__kb_filter)
-            update = {self.__slot: {'ts': Clock().now().nanoseconds, 'data': msg_dict}}
+            # update = {self.__slot: {'ts': Clock().now().nanoseconds, 'data': msg_dict}}
+            twist = json_dict_str_from_ros_msg(self.__twist_smoothed)
+            update = {self.__slot: {'ts': Clock().now().nanoseconds, 'data': twist}}
             self._kb_server.update(filter, update)
             self.__last_kb_update = current_ts

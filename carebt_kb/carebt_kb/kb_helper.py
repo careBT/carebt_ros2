@@ -18,10 +18,6 @@ from rclpy_message_converter import message_converter
 
 def dict_from_kb_response(response: KbQuery.Response):
     return json.loads(response.response)
-    
-def ros_msg_from_dict_str(msg_type: str, ros_msg_str: str):
-    return message_converter.convert_dictionary_to_ros_message(
-            msg_type, eval(ros_msg_str))
 
 def json_dict_str_from_ros_msg(ros_msg):
     msg_dict = message_converter.convert_ros_message_to_dictionary(ros_msg)

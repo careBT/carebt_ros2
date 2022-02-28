@@ -37,13 +37,14 @@ class OwlReady2Kb():
     # PRIVATE
 
     def __get_items(self, filter):
-        if 'type' in filter:
-            filter['type'] = eval(f'self.{filter["type"]}')
         items = []
-        try:
-            items = eval(f'self.{self.__onto}.search(**filter)')
-        except Exception:
-            pass
+        if len(filter) > 0:
+            try:
+                if 'type' in filter:
+                    filter['type'] = eval(f'self.{filter["type"]}')
+                items = eval(f'self.{self.__onto}.search(**filter)')
+            except Exception as ex:
+                pass
         return items
 
     def __onto_to_dict(self, clazz: ThingClass):
@@ -89,10 +90,19 @@ class OwlReady2Kb():
                 dict_str += f'\'{prop.name}\': {value}, '
             # str
             elif issubclass(key_type, (str)):
-                if is_functional:
-                    dict_str += f'\'{prop.name}\': \'{value}\', '
+                if prop.name.endswith('_rosstr'):
+                    if is_functional:
+                        dict_str += f'\'{prop.name}\': {value}, '
+                    else:
+                        v_list = []
+                        for v in value:
+                            v_list.append(eval(v))
+                        dict_str += f'\'{prop.name}\': {v_list}, '
                 else:
-                    dict_str += f'\'{prop.name}\': {value}, '
+                    if is_functional:
+                        dict_str += f'\'{prop.name}\': \'{value}\', '
+                    else:
+                        dict_str += f'\'{prop.name}\': {value}, '
             # datetime.datetime
             elif issubclass(key_type, (datetime.datetime)):
                 if is_functional:
@@ -172,10 +182,21 @@ class OwlReady2Kb():
                     typed_dict[key] = frame[key]
                 # str
                 elif issubclass(key_type, (str)):
-                    if is_functional:
-                        typed_dict[key] = f'"{frame[key]}"'
+                    # if the str is a ROS str
+                    if key.endswith('_rosstr'):
+                        if is_functional:
+                            typed_dict[key] = f'"{frame[key]}"'
+                        else:
+                            str_value_list = []
+                            for value in frame[key]:
+                                str_value_list.append(f'{value}')
+                            typed_dict[key] = str_value_list
+                    # else it is a 'normal' str
                     else:
-                        typed_dict[key] = frame[key]
+                        if is_functional:
+                            typed_dict[key] = f'"{frame[key]}"'
+                        else:
+                            typed_dict[key] = frame[key]
                 # datetime.datetime
                 elif issubclass(key_type, (datetime.datetime)):
                     if is_functional:
@@ -216,7 +237,10 @@ class OwlReady2Kb():
             if k in ['type']:
                 continue
             if k not in self.OWL_KEYWORDS:
-                exec(f'self.{item}.{k} = {typed_update[k]}')
+                try:
+                    exec(f'self.{item}.{k} = {typed_update[k]}')
+                except Exception as ex:
+                    print(f'__update excpetion: {ex}') 
             else:
                 print(f'update - do not use key: {k}')
 
