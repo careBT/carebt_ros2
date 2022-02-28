@@ -55,7 +55,7 @@ class KbServer(Node):
         self.get_logger().info(f'kb created.')
 
         # create crud service
-        self.create_service(KbQuery, 'crud', self.__crud_query_callback)
+        self.create_service(KbQuery, 'query', self.__crud_query_callback)
 
         # create wait_state action server
         ActionServer(
@@ -98,13 +98,14 @@ class KbServer(Node):
                 return KbEvalState.Result()
 
             filter = json.loads(goal.filter)
-            result = self.read(filter)
+            result = self.search(filter)
             try:
                 if(eval(goal.eval)):
                     break
             except Exception as e:
                 msg = f'eval: {goal.eval} -- EXCEPTION: {e}'
                 self.get_logger().warn(msg)
+                self.get_logger().warn(f'result= {result}')
                 feedback_msg = KbEvalState.Feedback()
                 feedback_msg.message = msg
                 goal_handle.publish_feedback(feedback_msg)
