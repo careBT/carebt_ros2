@@ -27,10 +27,31 @@ class SimpleWebServer(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.send_response(200)
-        self.send_header("Content-type", "application/json")
+        self.send_header("Content-type", "text/html")
         self.end_headers()
-        kb_content = self.__kb.read({})
-        self.wfile.write(bytes(json.dumps(kb_content, sort_keys=True, indent=2), "utf-8"))
+        str_clazzes = self.__kb.get_classes()
+        # start HTML
+        self.wfile.write(bytes("<html>\
+            <head>\
+                <title>careBT web view</title>\
+            <style>\
+                table, th, td { border: 1px solid black; }\
+                table {padding: 10px;}\
+            </style>\
+            </head><body>", "utf-8"))
+        # iterate classes
+        for str_clazz in str_clazzes:
+            self.wfile.write(bytes(f"<h3>{str_clazz}</h3>", "utf-8"))
+            str_individuals = self.__kb.get_individuals_of(str_clazz)
+            individuals = self.__kb.read(str_individuals)
+            for individual in individuals:
+                self.wfile.write(bytes(f"<table border: 1px>", "utf-8"))
+                for key in individual.keys():
+                    self.wfile.write(bytes(f"<tr><td>{key}</td><td>{individual[key]}</td></tr>", "utf-8"))
+                self.wfile.write(bytes(f"</table>", "utf-8"))
+
+        # end HTML
+        self.wfile.write(bytes("</body></html>", "utf-8"))
 
     def log_message(self, format, *args):
         return
