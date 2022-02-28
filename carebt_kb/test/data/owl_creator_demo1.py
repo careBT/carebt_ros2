@@ -25,9 +25,10 @@ with demo1:
     
     # Robot properties
     class robot_id(Robot >> int, FunctionalProperty): pass
-    class pose_rosstr(Robot >> str, FunctionalProperty): pass
-    class battery_soc_rosstr(Robot >> str, FunctionalProperty): pass
     class status(Robot >> str, FunctionalProperty): pass
+    class pose_rosstr(Robot >> str, FunctionalProperty): pass
+    class smoothed_odom_rosstr(Robot >> str, FunctionalProperty): pass
+    class battery_soc_rosstr(Robot >> str): pass
 
     # Person properties
     class first_name(Person >> str, FunctionalProperty): pass

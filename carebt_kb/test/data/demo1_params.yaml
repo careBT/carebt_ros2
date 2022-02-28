@@ -1,28 +1,28 @@
 carebt_kb:
   ros__parameters:
-    kb_file: 'src/carebt_ros2/carebt_kb/test/data/memory.json'
+    kb_file: 'src/carebt_ros2/carebt_kb/test/data/demo1.owl'
     kb_persist: False
     plugins: ['DataGatherer', 'OdomSmoother', 'WebView']
     DataGatherer:
       class: 'carebt_kb.plugins.generic_data_gatherer.GenericDataGatherer'
-      data_gatherer: ['BatteryState', 'BobsPose']
+      data_gatherer: ['BatteryState', 'RobotPose']
       BatteryState:
         topic: '/battery'
         type: 'std_msgs.msg.Int32'
-        kb_filter: '{"is-a": "Robot"}'
-        slot: 'battery_soc'
+        kb_filter: '{"type": "demo1.Robot", "robot_id": 1}'
+        slot: 'battery_soc_rosstr'
         max_items: 3
-      BobsPose:
-        topic: '/bobs_pose'
+      RobotPose:
+        topic: '/robot_pose'
         type: 'geometry_msgs.msg.PoseStamped'
-        kb_filter: '{"is-a": "Person", "name": "Bob"}'
-        slot: 'current_pose'
+        kb_filter: '{"type": "demo1.Robot", "robot_id": 1}'
+        slot: 'pose_rosstr'
     OdomSmoother:
       class: 'carebt_kb.plugins.odom_smoother.OdomSmoother'
       topic: 'odom'
       history_duration_ms: 5000
-      kb_filter: '{"is-a": "Robot"}'
-      slot: 'smoothed_odom'
+      kb_filter: '{"type": "demo1.Robot", "robot_id": 1}'
+      slot: 'smoothed_odom_rosstr'
       kb_update_rate_ms: 500
     WebView:
       class: 'carebt_kb.plugins.simple_kb_web_viewer.SimpleKbWebViewer'
