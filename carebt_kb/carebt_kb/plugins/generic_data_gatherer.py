@@ -67,14 +67,13 @@ class GenericDataGatherer(PluginBase):
             f'GenericDataGatherer - Incoming topic= {msg}; slot= {slot}, max_items= {max_items}')
         filter = eval(kb_filter)
         if(max_items == 1):
-            update = {slot: json_dict_str_from_ros_msg(msg)}
+            update = {slot: {'ts': Clock().now().nanoseconds, 'data': message_converter.convert_ros_message_to_dictionary(msg)}}
         else:
             result = self._kb_server.search(filter)
             items = []
             if(len(result) >= 1 and slot in result[0]):
                 items = result[0][slot]
-            #items.append(str(message_converter.convert_ros_message_to_dictionary(msg)))
-            items.append(message_converter.convert_ros_message_to_dictionary(msg))
+            items.append({'ts': Clock().now().nanoseconds, 'data': message_converter.convert_ros_message_to_dictionary(msg)})
             if(len(items) > max_items):
                 del items[0]
             update = {slot: items}
