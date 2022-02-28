@@ -287,6 +287,13 @@ class OwlReady2Kb():
             destroy_entity(item)
         self.__sync_to_file()
 
+    def get_classes(self):
+        clazzes = list(eval(f'self.{self.__onto}.classes()'))
+        str_list = []
+        for clazz in clazzes:
+            str_list.append(str(clazz))
+        return str_list
+
     def get_subclasses_of(self, class_str: str):
         if class_str == 'Thing':
             clazz = Thing

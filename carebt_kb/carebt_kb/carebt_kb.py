@@ -51,7 +51,7 @@ class KbServer(Node):
 
         # create SimpleKb
         self.get_logger().info(f'create kb from file: {kb_file}, persist = {kb_persist}')
-        self.__simple_kb = OwlReady2Kb(kb_file, kb_persist)
+        self.__kb = OwlReady2Kb(kb_file, kb_persist)
         self.get_logger().info(f'kb created.')
 
         # create crud service
@@ -162,23 +162,37 @@ class KbServer(Node):
     ## the Kb CRUD operations
 
     def create(self, frame) -> None:
-        self.__simple_kb.create(frame)
+        self.__kb.create(frame)
         self.__kb_updated()
 
     def search(self, filter):
-        return self.__simple_kb.search(filter)
+        return self.__kb.search(filter)
 
     def read(self, filter):
-        return self.__simple_kb.read(filter)
+        return self.__kb.read(filter)
 
     def update(self, filter, update) -> None:
-        self.__simple_kb.update(filter, update)
+        self.__kb.update(filter, update)
         self.__kb_updated()
-        return self.__simple_kb.search(filter)
+        return self.__kb.search(filter)
 
     def delete(self, filter):
-        self.__simple_kb.delete(filter)
+        self.__kb.delete(filter)
         self.__kb_updated()
+
+    ## 
+
+    def get_classes(self):
+        return self.__kb.get_classes()
+
+    def get_subclasses_of(self, class_str: str):
+        return self.__kb.get_subclasses_of(class_str)
+
+    def get_individuals_of(self, class_str: str):
+        return self.__kb.get_individuals_of(class_str)
+
+    def is_individual_of(self, individual_str: str, class_str: str) -> bool:
+        return self.__kb(individual_str, class_str)
 
 
 def main(args=None):
