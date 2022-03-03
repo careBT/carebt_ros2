@@ -16,6 +16,9 @@ from carebt_msgs.srv import KbQuery
 import json
 from rclpy_message_converter import message_converter
 
+def dict_from_kb_response(response: KbQuery.Response):
+    return json.loads(response.response)
+
 def kb_rosstr_from_ros_msg(ros_msg):
     msg_dict = message_converter.convert_ros_message_to_dictionary(ros_msg)
     return json.dumps(msg_dict).replace('"', '\\"')
@@ -26,10 +29,6 @@ def kb_rosstr_from_ros_msg_list(ros_msg_list: list):
         msg_dict = message_converter.convert_ros_message_to_dictionary(ros_msg)
         rosstr_list.append(json.dumps(msg_dict))
     return rosstr_list
-
-def json_dict_str_from_ros_msg(ros_msg):
-    msg_dict = message_converter.convert_ros_message_to_dictionary(ros_msg)
-    return json.dumps(msg_dict).replace('"', '\\"')
 
 def create_create_request(frame: dict):
     req = KbQuery.Request()
