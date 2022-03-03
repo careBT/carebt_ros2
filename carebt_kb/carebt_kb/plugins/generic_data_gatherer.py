@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from carebt_kb.kb_helper import json_dict_str_from_ros_msg
 from carebt_kb.plugin_base import import_class
 from carebt_kb.plugin_base import PluginBase
 import functools
@@ -67,13 +66,15 @@ class GenericDataGatherer(PluginBase):
             f'GenericDataGatherer - Incoming topic= {msg}; slot= {slot}, max_items= {max_items}')
         filter = eval(kb_filter)
         if(max_items == 1):
-            update = {slot: {'ts': Clock().now().nanoseconds, 'data': message_converter.convert_ros_message_to_dictionary(msg)}}
+            update = {slot: {'ts': Clock().now().nanoseconds,
+                             'data': message_converter.convert_ros_message_to_dictionary(msg)}}
         else:
             result = self._kb_server.search(filter)
             items = []
             if(len(result) >= 1 and slot in result[0]):
                 items = result[0][slot]
-            items.append({'ts': Clock().now().nanoseconds, 'data': message_converter.convert_ros_message_to_dictionary(msg)})
+            items.append({'ts': Clock().now().nanoseconds,
+                          'data': message_converter.convert_ros_message_to_dictionary(msg)})
             if(len(items) > max_items):
                 del items[0]
             update = {slot: items}

@@ -21,7 +21,6 @@ import threading
 
 from carebt_kb.plugin_base import PluginBase
 from datetime import datetime
-from carebt_kb.kb_helper import json_dict_str_from_ros_msg
 from geometry_msgs.msg import TwistStamped
 from nav_msgs.msg import Odometry
 from rclpy.duration import Duration

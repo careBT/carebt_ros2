@@ -16,7 +16,7 @@ from carebt_msgs.srv import KbQuery
 from carebt_kb.carebt_kb import KbServer
 from carebt_kb.kb_helper import create_search_request
 from carebt_kb.kb_helper import create_update_request
-from carebt_kb.kb_helper import json_dict_str_from_ros_msg
+from carebt_kb.kb_helper import kb_rosstr_from_ros_msg
 from carebt_kb.kb_helper import dict_from_kb_response
 from geometry_msgs.msg import PoseStamped
 import json
@@ -84,7 +84,7 @@ class TestKbServer():
         p = PoseStamped()
         p.pose.position.x = 1.0
         p.pose.position.y = 2.0
-        data = {'pose_rosstr': json_dict_str_from_ros_msg(p), 'status': 'Happy'}
+        data = {'pose_rosstr': kb_rosstr_from_ros_msg(p), 'status': 'Happy'}
         print(f'### data:  {data}')
         req = create_update_request(filter, data)
         res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
