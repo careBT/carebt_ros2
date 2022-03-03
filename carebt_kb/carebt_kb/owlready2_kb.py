@@ -189,7 +189,7 @@ class OwlReady2Kb():
                         else:
                             str_value_list = []
                             for value in frame[key]:
-                                str_value_list.append(f'{value}')
+                                str_value_list.append(value)
                             typed_dict[key] = str_value_list
                     # else it is a 'normal' str
                     else:
