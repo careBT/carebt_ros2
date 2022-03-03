@@ -24,32 +24,32 @@ def json_dict_str_from_ros_msg(ros_msg):
     return json.dumps(msg_dict).replace('"', '\\"')
 
 def create_create_request(frame: dict):
-    req = KbQuery.Request
+    req = KbQuery.Request()
     req.operation = 'CREATE'
-    req.filter = json.dumps(frame)
+    req.data = json.dumps(frame)
     return req
 
 def create_search_request(filter: dict):
-    req = KbQuery.Request
+    req = KbQuery.Request()
     req.operation = 'SEARCH'
     req.filter = json.dumps(filter)
     return req
 
 def create_read_request(items: list):
-    req = KbQuery.Request
+    req = KbQuery.Request()
     req.operation = 'READ'
     req.filter = json.dumps(f'"items": {items}')
     return req
 
 def create_update_request(filter: dict, data: dict):
-    req = KbQuery.Request
+    req = KbQuery.Request()
     req.operation = 'UPDATE'
     req.filter = json.dumps(filter)
     req.data = json.dumps(data)
     return req
 
 def create_delete_request(filter: dict):
-    req = KbQuery.Request
+    req = KbQuery.Request()
     req.operation = 'DELETE'
     req.filter = json.dumps(filter)
     return req

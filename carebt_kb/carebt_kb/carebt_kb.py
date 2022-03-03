@@ -124,7 +124,7 @@ class KbServer(Node):
 
     def __crud_query_callback(self, request: KbQuery.Request, response: KbQuery.Response):
         self.get_logger().info(
-            f'Incoming request: {request.operation} {request.filter} {request.data}')
+            f'Incoming request: {request.operation}, filter: {request.filter}, data: {request.data}')
 
         # create
         if(request.operation.upper() == 'CREATE'):
