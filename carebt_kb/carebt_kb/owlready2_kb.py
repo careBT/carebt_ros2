@@ -304,6 +304,8 @@ class OwlReady2Kb():
         for clazz in subclazzes:
             str_list.append(str(clazz))
         return str_list
+    def has_subclasses(self, class_str: str):
+        return len(self.get_subclasses_of(class_str)) > 0
 
     def get_individuals_of(self, class_str: str):
         if class_str == 'Thing':

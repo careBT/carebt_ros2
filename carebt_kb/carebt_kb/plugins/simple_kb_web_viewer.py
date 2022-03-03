@@ -41,14 +41,17 @@ class SimpleWebServer(BaseHTTPRequestHandler):
             </head><body>", "utf-8"))
         # iterate classes
         for str_clazz in str_clazzes:
-            self.wfile.write(bytes(f"<h3>{str_clazz}</h3>", "utf-8"))
-            str_individuals = self.__kb.get_individuals_of(str_clazz)
-            individuals = self.__kb.read(str_individuals)
-            for individual in individuals:
-                self.wfile.write(bytes(f"<table border: 1px>", "utf-8"))
-                for key in individual.keys():
-                    self.wfile.write(bytes(f"<tr><td>{key}</td><td>{individual[key]}</td></tr>", "utf-8"))
-                self.wfile.write(bytes(f"</table>", "utf-8"))
+            if not self.__kb.has_subclasses(str_clazz):
+                self.wfile.write(bytes(f"<h3>{str_clazz}</h3>", "utf-8"))
+                str_individuals = self.__kb.get_individuals_of(str_clazz)
+                individuals = self.__kb.read(str_individuals)
+                for individual in individuals:
+                    self.wfile.write(bytes(f"<table border: 1px>", "utf-8"))
+                    for key in individual.keys():
+                        if key.endswith('_rosstr') and isinstance(individual[key], list):
+                            self.wfile.write(bytes(f"<tr><td>{key} length</td><td>{len(individual[key])}</td></tr>", "utf-8"))
+                        self.wfile.write(bytes(f"<tr><td>{key}</td><td>{individual[key]}</td></tr>", "utf-8"))
+                    self.wfile.write(bytes(f"</table>", "utf-8"))
 
         # end HTML
         self.wfile.write(bytes("</body></html>", "utf-8"))

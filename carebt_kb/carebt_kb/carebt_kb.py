@@ -185,6 +185,9 @@ class KbServer(Node):
     def get_classes(self):
         return self.__kb.get_classes()
 
+    def has_subclasses(self, class_str: str):
+        return self.__kb.has_subclasses(class_str)
+
     def get_subclasses_of(self, class_str: str):
         return self.__kb.get_subclasses_of(class_str)
 
