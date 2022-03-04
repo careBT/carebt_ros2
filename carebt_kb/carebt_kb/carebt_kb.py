@@ -55,13 +55,13 @@ class KbServer(Node):
         self.get_logger().info(f'kb created.')
 
         # create crud service
-        self.create_service(KbQuery, 'query', self.__crud_query_callback)
+        self.create_service(KbQuery, 'carebt_kb/query', self.__crud_query_callback)
 
         # create wait_state action server
         ActionServer(
             self,
             KbEvalState,
-            'wait_eval_state',
+            'carebt_kb/wait_eval_state',
             callback_group=ReentrantCallbackGroup(),
             execute_callback=self.__wait_eval_state_execute_callback,
             cancel_callback=self.__wait_eval_state_cancel_callback)
