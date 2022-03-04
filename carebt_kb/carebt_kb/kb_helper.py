@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from carebt_msgs.action import KbEvalState
 from carebt_msgs.srv import KbQuery
 import json
 from rclpy_message_converter import message_converter
@@ -60,3 +61,9 @@ def create_delete_request(filter: dict):
     req.operation = 'DELETE'
     req.filter = json.dumps(filter)
     return req
+
+def create_eval_state_goal(filter: dict, eval: str):
+    goal = KbEvalState.Goal()
+    goal.filter = json.dumps(filter)
+    goal.eval = eval
+    return goal
