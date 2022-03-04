@@ -62,7 +62,7 @@ class GenericDataGatherer(PluginBase):
                 self.data_gatherer_callback, slot, kb_filter, max_items), 10)
 
     def data_gatherer_callback(self, slot, kb_filter, max_items, msg):
-        self._kb_server.get_logger().info(
+        self._kb_server.get_logger().debug(
             f'GenericDataGatherer - Incoming topic= {msg}; slot= {slot}, max_items= {max_items}')
         filter = eval(kb_filter)
         if(max_items == 1):
