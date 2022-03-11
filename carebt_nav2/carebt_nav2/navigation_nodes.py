@@ -47,7 +47,33 @@ class InitPoseAction(ActionNode):
 
     Input Parameters
     ----------------
-    ?pose : geometry_msgs.msg.PoseWithCovarianceStamped
+    ?initial_pose : geometry_msgs.msg.PoseWithCovarianceStamped
+        The current pose
+    """
+
+    def __init__(self, bt_runner):
+        super().__init__(bt_runner, '?initial_pose')
+        self.__bt_runner = bt_runner
+
+    def on_init(self) -> None:
+        self.__initialpose_pub = self.__bt_runner.node.create_publisher(PoseWithCovarianceStamped,
+                                                                        '/initialpose',
+                                                                        10)
+        self.__initialpose_pub.publish(self._initial_pose)
+        self.set_status(NodeStatus.SUCCESS)
+
+    #def __del__(self) -> None:
+    #    self.__initialpose_pub.destroy()
+
+########################################################################
+
+
+class WaitForLocalizationTF(ActionNode):
+    """Waits for tf from map to base_link.
+
+    Input Parameters
+    ----------------
+    ?initial_pose : geometry_msgs.msg.PoseWithCovarianceStamped
         The current pose
     """
 
@@ -63,11 +89,6 @@ class InitPoseAction(ActionNode):
         self.set_status(NodeStatus.SUSPENDED)
 
     def __worker(self):
-        self.__initialpose_pub = self.__bt_runner.node.create_publisher(PoseWithCovarianceStamped,
-                                                                        '/initialpose',
-                                                                        10)
-        self.__initialpose_pub.publish(self._initial_pose)
-
         self.__tf_buffer = Buffer()
         self.__tf_listener = TransformListener(self.__tf_buffer, self.__bt_runner.node)
         while True:
@@ -85,7 +106,7 @@ class InitPoseAction(ActionNode):
                    and abs(trans.transform.translation.y - self._initial_pose.pose.pose.position.y)
                         < math.sqrt(self._initial_pose.pose.covariance[7])):
                     # AMCL pose ok
-                    self.get_logger().info('{} - AMCL pose ok'
+                    self.get_logger().info('{} - localization pose ok'
                                            .format(self.__class__.__name__))
                     self.set_status(NodeStatus.SUCCESS)
                     break
@@ -97,7 +118,7 @@ class InitPoseAction(ActionNode):
     def on_timeout(self) -> None:
         self.__thread_running = False
         self.set_status(NodeStatus.FAILURE)
-        self.set_contingency_message('INITIALPOSE_NOT_SET')
+        self.set_contingency_message('NOT_LOCALIZED')
 
     #def __del__(self) -> None:
     #    self.__initialpose_pub.destroy()
