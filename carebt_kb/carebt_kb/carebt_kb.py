@@ -129,8 +129,8 @@ class KbServer(Node):
         # create
         if(request.operation.upper() == 'CREATE'):
             frame = json.loads(request.data)
-            self.create(frame)
             result = []
+            result.append(self.create(frame))
             response.response = json.dumps(result)
         # search
         elif(request.operation.upper() == 'SEARCH'):
@@ -161,9 +161,10 @@ class KbServer(Node):
 
     ## the Kb CRUD operations
 
-    def create(self, frame) -> None:
-        self.__kb.create(frame)
+    def create(self, frame) -> str:
+        item = self.__kb.create(frame)
         self.__kb_updated()
+        return item
 
     def search(self, filter):
         return self.__kb.search(filter)
@@ -171,12 +172,12 @@ class KbServer(Node):
     def read(self, filter):
         return self.__kb.read(filter)
 
-    def update(self, filter, update) -> None:
+    def update(self, filter, update):
         self.__kb.update(filter, update)
         self.__kb_updated()
         return self.__kb.search(filter)
 
-    def delete(self, filter):
+    def delete(self, filter) -> None:
         self.__kb.delete(filter)
         self.__kb_updated()
 
