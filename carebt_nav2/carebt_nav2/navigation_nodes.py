@@ -461,13 +461,15 @@ class FollowPathAction(RosActionClientActionNode):
         status = future.result().status
 
         if(status == GoalStatus.STATUS_SUCCEEDED):
-            self.get_logger().info('{} - GoalStatus.STATUS_SUCCEEDED'
-                                   .format(self.__class__.__name__))
+            self.get_logger().info('{} - GoalStatus.STATUS_SUCCEEDED - {}'
+                                   .format(self.__class__.__name__,
+                                           self.get_goal_handle().goal_id.uuid))
             self.set_status(NodeStatus.SUCCESS)
 
         elif(status == GoalStatus.STATUS_ABORTED):
-            self.get_logger().info('{} - GoalStatus.STATUS_ABORTED'
-                                   .format(self.__class__.__name__))
+            self.get_logger().info('{} - GoalStatus.STATUS_ABORTED - {}'
+                                   .format(self.__class__.__name__,
+                                           self.get_goal_handle().goal_id.uuid))
             # TODO
             # currently there is no way to distinguish between an abort due
             # to a new goal (old goal aborted) and a real abort of a goal
