@@ -240,7 +240,7 @@ class OwlReady2Kb():
                 try:
                     exec(f'self.{item}.{k} = {typed_update[k]}')
                 except Exception as ex:
-                    print(f'__update excpetion: {ex}') 
+                    print(f'__update excpetion: {ex} in: self.{item}.{k} = {typed_update[k]}') 
             else:
                 print(f'update - do not use key: {k}')
 
