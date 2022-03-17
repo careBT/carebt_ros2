@@ -46,7 +46,9 @@ def create_search_request(filter: dict):
 def create_read_request(items: list):
     req = KbQuery.Request()
     req.operation = 'READ'
-    req.filter = json.dumps(f'"items": {items}')
+    filter = {}
+    filter['items'] = items
+    req.filter = json.dumps(filter)
     return req
 
 def create_update_request(filter: dict, data: dict):
