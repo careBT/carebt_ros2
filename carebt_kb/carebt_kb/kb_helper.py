@@ -64,6 +64,14 @@ def create_delete_request(filter: dict):
     req.filter = json.dumps(filter)
     return req
 
+def create_delete_items_request(items: list):
+    req = KbQuery.Request()
+    req.operation = 'DELETE_ITEMS'
+    filter = {}
+    filter['items'] = items
+    req.filter = json.dumps(filter)
+    return req
+
 def create_eval_state_goal(filter: dict, eval: str):
     goal = KbEvalState.Goal()
     goal.filter = json.dumps(filter)

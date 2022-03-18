@@ -287,6 +287,12 @@ class OwlReady2Kb():
             destroy_entity(item)
         self.__sync_to_file()
 
+    def delete_items(self, items):
+        for item in items:
+            o = eval(f'self.{item}')
+            destroy_entity(o)
+        self.__sync_to_file()
+
     def get_classes(self):
         clazzes = list(eval(f'self.{self.__onto}.classes()'))
         str_list = []

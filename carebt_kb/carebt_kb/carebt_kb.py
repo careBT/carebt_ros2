@@ -139,8 +139,8 @@ class KbServer(Node):
             response.response = json.dumps(result)
         # read
         elif(request.operation.upper() == 'READ'):
-            filter = json.loads(request.filter)['items']
-            result = self.read(filter)
+            items = json.loads(request.filter)['items']
+            result = self.read(items)
             response.response = json.dumps(result)
         # update
         elif(request.operation.upper() == 'UPDATE'):
@@ -152,6 +152,12 @@ class KbServer(Node):
         elif(request.operation.upper() == 'DELETE'):
             filter = json.loads(request.filter)
             self.delete(filter)
+            result = []
+            response.response = json.dumps(result)
+        # delete_items
+        elif(request.operation.upper() == 'DELETE_ITEMS'):
+            items = json.loads(request.filter)['items']
+            result = self.delete_items(items)
             result = []
             response.response = json.dumps(result)
         else:
@@ -179,6 +185,10 @@ class KbServer(Node):
 
     def delete(self, filter) -> None:
         self.__kb.delete(filter)
+        self.__kb_updated()
+
+    def delete_items(self, items) -> None:
+        self.__kb.delete_items(items)
         self.__kb_updated()
 
     ## 
