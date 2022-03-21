@@ -29,16 +29,29 @@ from time import sleep
 class NoopAction(ActionNode):
     """A noop action node.
 
-    Noop node  which can, for example, be used to register a contingency
-    handler on to trigger a callback function.
+    Noop node which can, for example, be used to register a contingency
+    handler on to trigger a callback function. The `NoopAction` returns the
+    status and contingency message which are provided as input. By default it
+    returns `SUCCESS` with an empty contingency message.
+
+    Input Parameters
+    ----------------
+    ?status : NodeStatus
+        NodeStatus to return
+
+    ?contingency_message : str
+        Contingency message to return
 
     """
 
     def __init__(self, bt_runner):
-        super().__init__(bt_runner)
+        super().__init__(bt_runner, "?status ?contingency_message")
+        self._status = NodeStatus.SUCCESS
+        self._contingency_message = ""
 
-    def on_tick(self) -> None:
-        self.set_status(NodeStatus.SUCCESS)
+    def on_init(self) -> None:
+        self.set_status(self._status)
+        self.set_contingency_message(self._contingency_message)
 
 ########################################################################
 
