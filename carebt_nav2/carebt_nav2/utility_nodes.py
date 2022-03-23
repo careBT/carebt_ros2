@@ -132,11 +132,11 @@ class LifecycleClient(ActionNode):
     def on_init(self) -> None:
         self.get_logger().info('{} - put {} into state {}'
                                .format(self.__class__.__name__, self._node, self._id))
+        self.set_status(NodeStatus.SUSPENDED)
         self.__thread_running = True
         self.__expected_goal_state = [0, 2, 1, 3, 2, 4, 4, 4][self._id]
         Thread(target=self.__worker, daemon=True).start()
-        self.set_status(NodeStatus.SUSPENDED)
-
+        
     def __worker(self):
         self.__change_state_client =\
             self.__bt_runner.node.create_client(ChangeState, f'/{self._node}/change_state')
@@ -202,9 +202,9 @@ class SetParameterClient(ActionNode):
                                        self._node,
                                        self._param_name,
                                        self._param_value))
-        Thread(target=self.__worker, daemon=True).start()
         self.set_status(NodeStatus.SUSPENDED)
-
+        Thread(target=self.__worker, daemon=True).start()
+        
     def __worker(self):
         self.__client = self.__bt_runner.node.create_client(SetParameters,
                                                             f'/{self._node}/set_parameters')
@@ -251,8 +251,8 @@ class ServiceClient(ActionNode):
                                        self._service,
                                        self._type,
                                        self._request))
-        Thread(target=self.__worker, daemon=True).start()
         self.set_status(NodeStatus.SUSPENDED)
+        Thread(target=self.__worker, daemon=True).start()
 
     def __worker(self):
         self.__client = self.__bt_runner.node.create_client(self._type, self._service)
