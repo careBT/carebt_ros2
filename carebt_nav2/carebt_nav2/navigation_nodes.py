@@ -31,8 +31,6 @@ from nav2_msgs.action import FollowPath
 from nav2_msgs.action import NavigateToPose
 import rclpy
 from tf2_ros import TransformException
-from tf2_ros.buffer import Buffer
-from tf2_ros.transform_listener import TransformListener
 import threading
 from time import sleep
 
@@ -79,24 +77,22 @@ class WaitForLocalizationTF(ActionNode):
 
     def __init__(self, bt_runner):
         super().__init__(bt_runner, '?initial_pose')
-        self.__bt_runner = bt_runner
+        self._tf_buffer = bt_runner.tf_buffer
         self.set_timeout(5000)
 
     def on_init(self) -> None:
+        self.set_status(NodeStatus.SUSPENDED)
         self.__thread_running = True
         self.__thread = threading.Thread(target=self.__worker)
         self.__thread.start()
-        self.set_status(NodeStatus.SUSPENDED)
 
     def __worker(self):
-        self.__tf_buffer = Buffer()
-        self.__tf_listener = TransformListener(self.__tf_buffer, self.__bt_runner.node)
         while True:
             if(not self.__thread_running):
                 break
             try:
                 now = rclpy.time.Time()
-                trans = self.__tf_buffer.lookup_transform(
+                trans = self._tf_buffer.lookup_transform(
                     'map',
                     'base_link',
                     now)
@@ -137,15 +133,14 @@ class GetCurrentPose(ActionNode):
 
     def __init__(self, bt_runner):
         super().__init__(bt_runner, '=> ?pose')
-        self._tf_buffer = Buffer()
-        self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
+        self._tf_buffer = self.bt_runner.tf_buffer
         self.set_timeout(3000)
 
     def on_init(self) -> None:
+        self.set_status(NodeStatus.SUSPENDED)
         self.__thread_running = True
         self.__thread = threading.Thread(target=self.__worker)
         self.__thread.start()
-        self.set_status(NodeStatus.SUSPENDED)
 
     def __worker(self):
         while True:
@@ -394,8 +389,7 @@ class CreateFollowPathFeedback(ActionNode):
         super().__init__(bt_runner, '?path => ?feedback')
         self._feedback = NavigateToPose.Feedback()
         self._start_time = datetime.now()
-        self._tf_buffer = Buffer()
-        self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
+        self._tf_buffer = self.bt_runner.tf_buffer
         self._odom_smoother = bt_runner.odom_smoother
 
     def on_tick(self) -> None:

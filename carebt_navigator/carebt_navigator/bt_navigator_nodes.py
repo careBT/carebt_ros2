@@ -26,8 +26,6 @@ from carebt_ros2.rosActionServerSequenceNode import RosActionServerSequenceNode
 from nav2_msgs.action import FollowWaypoints
 from nav2_msgs.action import NavigateThroughPoses
 from nav2_msgs.action import NavigateToPose
-from tf2_ros.buffer import Buffer
-from tf2_ros.transform_listener import TransformListener
 
 ########################################################################
 
@@ -112,8 +110,7 @@ class ApproachPoseThroughPosesSequence(RosActionServerSequenceNode):
         self.set_throttle_ms(250)
         self._goal_handle = None
         self._start_time = None
-        self._tf_buffer = Buffer()
-        self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
+        self._tf_buffer = self.bt_runner.tf_buffer
         self._odom_smoother = bt_runner.odom_smoother
 
     def on_init(self) -> None:
@@ -198,8 +195,7 @@ class FollowWaypointsSequence(RosActionServerSequenceNode):
         self.set_throttle_ms(250)
         self._goal_handle = None
         self._start_time = None
-        self._tf_buffer = Buffer()
-        self._tf_listener = TransformListener(self._tf_buffer, bt_runner.node)
+        self._tf_buffer = self.bt_runner.tf_buffer
         self._odom_smoother = bt_runner.odom_smoother
         self.__ros_node = bt_runner.node
 

@@ -17,6 +17,8 @@ from carebt_navigator.bt_navigator_nodes import NavigatorNode
 from carebt_ros2 import RosCarebtRunner
 from carebt_ros2.plugins.odom_smoother import OdomSmoother
 from rclpy.duration import Duration
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
 
 ########################################################################
 
@@ -27,6 +29,10 @@ def main():
     rosCarebtRunner.get_bt_runner().odom_smoother = OdomSmoother(rosCarebtRunner,
                                                                  'odom',
                                                                  Duration(nanoseconds=500000000))
+    
+    rosCarebtRunner.get_bt_runner().tf_buffer = Buffer()
+    rosCarebtRunner.get_bt_runner().tf_listener = TransformListener(
+        rosCarebtRunner.get_bt_runner().tf_buffer, rosCarebtRunner)
     rosCarebtRunner.declare_parameter('waypoint_action', 'WaitAction')
 
     rosCarebtRunner.run(NavigatorNode)
