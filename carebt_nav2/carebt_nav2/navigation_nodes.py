@@ -226,6 +226,7 @@ class ComputePathToPoseAction(RosActionClientActionNode):
                          '?start ?goal => ?path')
 
     def on_tick(self) -> None:
+        self.set_status(NodeStatus.SUSPENDED)
         if(self._start is not None):
             self._goal_msg.start = self._start
             self._goal_msg.use_start = True
@@ -233,7 +234,6 @@ class ComputePathToPoseAction(RosActionClientActionNode):
             self._goal_msg.use_start = False
         self._goal_msg.goal = self._goal
         self._goal_msg.planner_id = ''  # TODO: select planner from kb
-        self.set_status(NodeStatus.SUSPENDED)
 
     def result_callback(self, future) -> None:
         status = future.result().status
@@ -271,14 +271,14 @@ class ComputePathThroughPosesAction(RosActionClientActionNode):
                          'compute_path_through_poses', '?start ?goals => ?path')
 
     def on_tick(self) -> None:
+        self.set_status(NodeStatus.SUSPENDED)
         if(self._start is not None):
             self._goal_msg.start = self._start
             self._goal_msg.use_start = True
         else:
             self._goal_msg.use_start = False
         self._goal_msg.goals = self._goals
-        self._goal_msg.planner_id = ''  # TODO: select planner from kb
-        self.set_status(NodeStatus.SUSPENDED)
+        self._goal_msg.planner_id = ''  # TODO: select planner from kb   
 
     def result_callback(self, future) -> None:
         status = future.result().status
@@ -444,8 +444,6 @@ class FollowPathAction(RosActionClientActionNode):
                 self._goal_msg = FollowPath.Goal()
                 self._goal_msg.path = self._path
                 self._current_path = self._path
-
-        self.set_status(NodeStatus.RUNNING)
 
     def on_abort(self) -> None:
         self.get_logger().info('{} - aborting...'.format(self.__class__.__name__))
