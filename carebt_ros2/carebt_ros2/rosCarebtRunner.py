@@ -29,11 +29,11 @@ class BtNode(Thread):
     def __init__(self, ros_node: Node):
         Thread.__init__(self, target=self.thread, daemon=True)
         self.__ros_node = ros_node
-        self.__bt_runner.get_logger().set_log_level(LogLevel.INFO)
-
+       
         # Use a MultiThreadedExecutor to enable processing goals concurrently
         self.__executor = MultiThreadedExecutor()
         self.__bt_runner = BehaviorTreeRunner()
+        self.__bt_runner.get_logger().set_log_level(LogLevel.INFO)
 
     def thread(self):
         rclpy.spin(self.__ros_node, executor=self.__executor)

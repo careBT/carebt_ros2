@@ -236,15 +236,9 @@ class ComputePathToPoseAction(RosActionClientActionNode):
         self._goal_msg.planner_id = ''  # TODO: select planner from kb
 
     def result_callback(self, future) -> None:
-        status = future.result().status
+        self._path = future.result().result.path
+        self.set_status(NodeStatus.SUCCESS)
 
-        if(status == GoalStatus.STATUS_SUCCEEDED):
-            self._path = future.result().result.path
-            self.set_status(NodeStatus.SUCCESS)
-        elif(status == GoalStatus.STATUS_ABORTED):
-            # we can not distinguish between an abort due to a new goal (old goal aborted)
-            # and a real abort of a goal due to a failure in the processing
-            pass
 
 ########################################################################
 
@@ -281,15 +275,9 @@ class ComputePathThroughPosesAction(RosActionClientActionNode):
         self._goal_msg.planner_id = ''  # TODO: select planner from kb   
 
     def result_callback(self, future) -> None:
-        status = future.result().status
+        self._path = future.result().result.path
+        self.set_status(NodeStatus.SUCCESS)
 
-        if(status == GoalStatus.STATUS_SUCCEEDED):
-            self._path = future.result().result.path
-            self.set_status(NodeStatus.SUCCESS)
-        elif(status == GoalStatus.STATUS_ABORTED):
-            # we can not distinguish between an abort due to a new goal (old goal aborted)
-            # and a real abort of a goal due to a failure in the processing
-            pass
 
 ########################################################################
 
@@ -445,27 +433,9 @@ class FollowPathAction(RosActionClientActionNode):
                 self._goal_msg.path = self._path
                 self._current_path = self._path
 
-    def on_abort(self) -> None:
-        self.get_logger().info('{} - aborting...'.format(self.__class__.__name__))
-        self.get_goal_handle().cancel_goal()
-
     def result_callback(self, future) -> None:
-        status = future.result().status
+        self.set_status(NodeStatus.SUCCESS)
 
-        if(status == GoalStatus.STATUS_SUCCEEDED):
-            self.get_logger().info('{} - GoalStatus.STATUS_SUCCEEDED - {}'
-                                   .format(self.__class__.__name__,
-                                           self.get_goal_handle().goal_id.uuid))
-            self.set_status(NodeStatus.SUCCESS)
-
-        elif(status == GoalStatus.STATUS_ABORTED):
-            self.get_logger().info('{} - GoalStatus.STATUS_ABORTED - {}'
-                                   .format(self.__class__.__name__,
-                                           self.get_goal_handle().goal_id.uuid))
-            # TODO
-            # currently there is no way to distinguish between an abort due
-            # to a new goal (old goal aborted) and a real abort of a goal
-            # due to a failure in the processing
 
 ########################################################################
 
