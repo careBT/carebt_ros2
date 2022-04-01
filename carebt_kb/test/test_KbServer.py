@@ -14,7 +14,7 @@
 
 from carebt_msgs.srv import KbQuery
 from carebt_kb.carebt_kb import KbServer
-from carebt_kb.kb_helper import create_search_request
+from carebt_kb.kb_helper import create_read_request
 from carebt_kb.kb_helper import create_update_request
 from carebt_kb.kb_helper import kb_rosstr_from_ros_msg
 from carebt_kb.kb_helper import dict_from_kb_response
@@ -38,7 +38,7 @@ class TestKbServer():
         kbserver = KbServer('carebt_kb')
 
         filter = {'type': 'demo1.Person', 'first_name': 'Bob'}
-        req = create_search_request(filter)
+        req = create_read_request(filter)
         res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
         result = dict_from_kb_response(res)
 
@@ -54,7 +54,7 @@ class TestKbServer():
         kbserver = KbServer('carebt_kb')
 
         filter = {'type': 'demo1.Person', 'first_name': 'XXX'}
-        req = create_search_request(filter)
+        req = create_read_request(filter)
         res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
         result = dict_from_kb_response(res)
 

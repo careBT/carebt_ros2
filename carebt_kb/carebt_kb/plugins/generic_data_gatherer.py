@@ -69,7 +69,7 @@ class GenericDataGatherer(PluginBase):
             update = {slot: {'ts': Clock().now().nanoseconds,
                              'data': message_converter.convert_ros_message_to_dictionary(msg)}}
         else:
-            result = self._kb_server.search(filter)
+            result = self._kb_server.read(filter)
             items = []
             if(len(result) >= 1 and slot in result[0]):
                 items = result[0][slot]

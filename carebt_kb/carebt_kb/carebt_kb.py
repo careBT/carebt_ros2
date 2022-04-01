@@ -132,21 +132,27 @@ class KbServer(Node):
             result = []
             result.append(self.create(frame))
             response.response = json.dumps(result)
-        # search
-        elif(request.operation.upper() == 'SEARCH'):
-            filter = json.loads(request.filter)
-            result = self.search(filter)
-            response.response = json.dumps(result)
         # read
         elif(request.operation.upper() == 'READ'):
+            filter = json.loads(request.filter)
+            result = self.read(filter)
+            response.response = json.dumps(result)
+        # read_items
+        elif(request.operation.upper() == 'READ_ITEMS'):
             items = json.loads(request.filter)['items']
-            result = self.read(items)
+            result = self.read_items(items)
             response.response = json.dumps(result)
         # update
         elif(request.operation.upper() == 'UPDATE'):
             filter = json.loads(request.filter)
             update = json.loads(request.data)
             result = self.update(filter, update)
+            response.response = json.dumps(result)
+        # update_items
+        elif(request.operation.upper() == 'UPDATE_ITEMS'):
+            items = json.loads(request.filter)['items']
+            update = json.loads(request.data)
+            result = self.update_items(items, update)
             response.response = json.dumps(result)
         # delete
         elif(request.operation.upper() == 'DELETE'):
@@ -161,7 +167,8 @@ class KbServer(Node):
             result = []
             response.response = json.dumps(result)
         else:
-            print(f'unsupported operation ({request.operation}), use: CREATE/READ/UPDATE/DELETE')
+            print(f'unsupported operation ({request.operation}), '
+                  + 'use: CREATE/READ/READ_ITEMS/UPDATE/UPDATE_ITEMS/DELETE/DELETE_ITEMS')
 
         return response
 
@@ -172,16 +179,21 @@ class KbServer(Node):
         self.__kb_updated()
         return item
 
-    def search(self, filter):
-        return self.__kb.search(filter)
-
     def read(self, filter):
         return self.__kb.read(filter)
+
+    def read_items(self, items):
+        return self.__kb.read_items(items)
 
     def update(self, filter, update):
         self.__kb.update(filter, update)
         self.__kb_updated()
-        return self.__kb.search(filter)
+        return self.__kb.read(filter)
+
+    def update_items(self, items, update):
+        self.__kb.update_items(items, update)
+        self.__kb_updated()
+        return self.__kb.read_items(items)
 
     def delete(self, filter) -> None:
         self.__kb.delete(filter)

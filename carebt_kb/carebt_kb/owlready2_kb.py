@@ -263,21 +263,27 @@ class OwlReady2Kb():
             self.__sync_to_file()
             return str(item)
 
-    def search(self, filter):
+    def read(self, filter):
         items = []
         for o in self.__get_items(filter):
             items.append(self.__onto_to_dict(o))
         return items
 
-    def read(self, items):
+    def read_items(self, items):
         rtrn_items = []
-        for i in items:
-            o = eval(f'self.{i}')
+        for item in items:
+            o = eval(f'self.{item}')
             rtrn_items.append(self.__onto_to_dict(o))
         return rtrn_items
     
     def update(self, filter, update):
         for item in self.__get_items(filter):
+            update['type'] = eval(f'self.{item}.__class__')
+            self.__update(item, update)
+        self.__sync_to_file()
+
+    def update_items(self, items, update):
+        for item in items:
             update['type'] = eval(f'self.{item}.__class__')
             self.__update(item, update)
         self.__sync_to_file()
