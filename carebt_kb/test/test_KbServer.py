@@ -14,8 +14,10 @@
 
 from carebt_msgs.srv import KbQuery
 from carebt_kb.carebt_kb import KbServer
-from carebt_kb.kb_helper import create_search_request
-from carebt_kb.kb_helper import create_update_request
+from carebt_kb.kb_helper import create_create_request
+from carebt_kb.kb_helper import create_read_request, create_read_items_request
+from carebt_kb.kb_helper import create_update_request, create_update_items_request
+from carebt_kb.kb_helper import create_delete_request, create_delete_items_request
 from carebt_kb.kb_helper import kb_rosstr_from_ros_msg
 from carebt_kb.kb_helper import dict_from_kb_response
 from geometry_msgs.msg import PoseStamped
@@ -34,11 +36,36 @@ class TestKbServer():
                          '-p', 'kb_file:=src/carebt_ros2/carebt_kb/test/data/demo1.owl',
                          '-p', 'kb_persist:=False'])
 
+    def test_create_grace(self, execute_before_any_test):
+        kbserver = KbServer('carebt_kb')
+
+        # check Grace
+        filter = {'type': 'demo1.Person', 'first_name': 'Grace'}
+        req = create_read_request(filter)
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
+        result = dict_from_kb_response(res)
+        assert len(result) == 0
+
+        # create
+        frame = {'type': 'demo1.Person', 'first_name': 'Grace', 'age': 25, 'size': 1.66, 'weight': 52.5}
+        req = create_create_request(frame)
+        kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
+
+        # read Grace
+        filter = {'type': 'demo1.Person', 'first_name': 'Grace'}
+        req = create_read_request(filter)
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
+        result = dict_from_kb_response(res)
+        assert len(result) == 1
+        assert len(result[0]) == 6
+        assert result[0]['is_a'] == ['demo1.Person']
+        assert result[0]['first_name'] == 'Grace'
+
     def test_read_bob(self, execute_before_any_test):
         kbserver = KbServer('carebt_kb')
 
         filter = {'type': 'demo1.Person', 'first_name': 'Bob'}
-        req = create_search_request(filter)
+        req = create_read_request(filter)
         res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
         result = dict_from_kb_response(res)
 
@@ -54,11 +81,42 @@ class TestKbServer():
         kbserver = KbServer('carebt_kb')
 
         filter = {'type': 'demo1.Person', 'first_name': 'XXX'}
-        req = create_search_request(filter)
+        req = create_read_request(filter)
         res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
         result = dict_from_kb_response(res)
 
         assert len(result) == 0
+
+    def test_read_item_bob(self, execute_before_any_test):
+        kbserver = KbServer('carebt_kb')
+
+        items = ['demo1.person2']
+        req = create_read_items_request(items)
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
+        result = dict_from_kb_response(res)
+
+        assert len(result) == 1
+        assert len(result[0]) == 6
+        assert result[0]['is_a'] == ['demo1.Person']
+        assert result[0]['first_name'] == 'Bob'
+        assert result[0]['age'] == 21
+        assert math.isclose(result[0]['size'], 1.8)
+        assert math.isclose(result[0]['weight'], 95.0)
+
+    def test_read_items_alice_bob(self, execute_before_any_test):
+        kbserver = KbServer('carebt_kb')
+
+        items = ['demo1.person1', 'demo1.person2']
+        req = create_read_items_request(items)
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
+        result = dict_from_kb_response(res)
+
+        assert len(result) == 2
+        assert result[0]['is_a'] == ['demo1.Person']
+        assert result[0]['first_name'] == 'Alice'
+        assert result[1]['is_a'] == ['demo1.Person']
+        assert result[1]['first_name'] == 'Bob'
+        
 
     def test_update_age_of_bob(self, execute_before_any_test):
         kbserver = KbServer('carebt_kb')
@@ -66,6 +124,23 @@ class TestKbServer():
         filter = {'type': 'demo1.Person', 'first_name': 'Bob'}
         data = {'age': 55}
         req = create_update_request(filter, data)
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
+        result = dict_from_kb_response(res)
+
+        assert len(result) == 1
+        assert len(result[0]) == 6
+        assert result[0]['is_a'] == ['demo1.Person']
+        assert result[0]['first_name'] == 'Bob'
+        assert result[0]['age'] == 55
+        assert math.isclose(result[0]['size'], 1.8)
+        assert math.isclose(result[0]['weight'], 95.0)
+
+    def test_update_items_age_of_bob(self, execute_before_any_test):
+        kbserver = KbServer('carebt_kb')
+
+        items = ['demo1.person2']
+        data = {'age': 55}
+        req = create_update_items_request(items, data)
         res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
         result = dict_from_kb_response(res)
 
@@ -102,3 +177,41 @@ class TestKbServer():
         assert isinstance(result[0]['pose_rosstr'], dict)
         assert math.isclose(p.pose.position.x, 1.0)
         assert math.isclose(p.pose.position.y, 2.0)
+
+    def test_delete_bob(self, execute_before_any_test):
+        kbserver = KbServer('carebt_kb')
+
+        items = ['demo1.person2']
+        req = create_read_items_request(items)
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
+        result = dict_from_kb_response(res)
+        assert len(result) == 1
+
+        filter = {'type': 'demo1.Person', 'first_name': 'Bob'}
+        req = create_delete_request(filter)
+        kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
+        
+        items = ['demo1.person2']
+        req = create_read_request(items)
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
+        result = dict_from_kb_response(res)
+        assert len(result) == 0
+
+    def test_delete_items_alice_bob(self, execute_before_any_test):
+        kbserver = KbServer('carebt_kb')
+
+        items = ['demo1.person1', 'demo1.person2']
+        req = create_read_items_request(items)
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
+        result = dict_from_kb_response(res)
+        assert len(result) == 2
+
+        items = ['demo1.person1', 'demo1.person2']
+        req = create_delete_items_request(items)
+        kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
+        
+        items = ['demo1.person1', 'demo1.person2']
+        req = create_read_request(items)
+        res = kbserver._KbServer__crud_query_callback(req, KbQuery.Response())
+        result = dict_from_kb_response(res)
+        assert len(result) == 0

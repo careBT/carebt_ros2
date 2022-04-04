@@ -37,15 +37,15 @@ def create_create_request(frame: dict):
     req.data = json.dumps(frame)
     return req
 
-def create_search_request(filter: dict):
+def create_read_request(filter: dict):
     req = KbQuery.Request()
-    req.operation = 'SEARCH'
+    req.operation = 'READ'
     req.filter = json.dumps(filter)
     return req
 
-def create_read_request(items: list):
+def create_read_items_request(items: list):
     req = KbQuery.Request()
-    req.operation = 'READ'
+    req.operation = 'READ_ITEMS'
     filter = {}
     filter['items'] = items
     req.filter = json.dumps(filter)
@@ -54,6 +54,15 @@ def create_read_request(items: list):
 def create_update_request(filter: dict, data: dict):
     req = KbQuery.Request()
     req.operation = 'UPDATE'
+    req.filter = json.dumps(filter)
+    req.data = json.dumps(data)
+    return req
+
+def create_update_items_request(items: list, data: dict):
+    req = KbQuery.Request()
+    req.operation = 'UPDATE_ITEMS'
+    filter = {}
+    filter['items'] = items
     req.filter = json.dumps(filter)
     req.data = json.dumps(data)
     return req
