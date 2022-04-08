@@ -98,7 +98,7 @@ class KbServer(Node):
                 return KbEvalState.Result()
 
             filter = json.loads(goal.filter)
-            result = self.search(filter)
+            result = self.read(filter)
             try:
                 if(eval(goal.eval)):
                     break
@@ -226,7 +226,7 @@ def main(args=None):
     node = KbServer('carebt_kb')
 
     # Use a MultiThreadedExecutor to enable processing goals concurrently
-    executor = MultiThreadedExecutor()
+    executor = MultiThreadedExecutor(num_threads=25)  # TODO threads as param
     rclpy.spin(node, executor=executor)
 
     rclpy.shutdown()
