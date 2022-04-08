@@ -28,7 +28,6 @@ if TYPE_CHECKING:
     from carebt.behaviorTreeRunner import BehaviorTreeRunner  # pragma: no cover
 
 def is_ready(self, wait_set):
-    """Return True if one or more entities are ready in the wait set."""
     if self._client_handle is None:
         return False
     try:
@@ -45,7 +44,6 @@ def is_ready(self, wait_set):
     return any(ready_entities)
 
 def get_num_entities(self):
-    """Return number of each type of entity used in the wait set."""
     if self._client_handle is None:
         return NumberOfEntities()
     try:
@@ -55,7 +53,6 @@ def get_num_entities(self):
     return NumberOfEntities(*num_entities)
 
 def add_to_wait_set(self, wait_set):
-    """Add entities to wait set."""
     if self._client_handle is None:
         return
     try:
