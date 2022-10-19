@@ -127,7 +127,7 @@ class LifecycleClient(ActionNode):
     def __init__(self, bt_runner):
         super().__init__(bt_runner, '?node ?id')
         self.__bt_runner = bt_runner
-        self.set_timeout(5000)
+        self.set_timeout(25000)
 
     def on_init(self) -> None:
         self.get_logger().info('{} - put {} into state {}'
