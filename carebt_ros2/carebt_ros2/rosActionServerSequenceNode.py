@@ -79,16 +79,15 @@ class RosActionServerSequenceNode(SequenceNode):
 
     def __cancel_callback(self, goal_handle):
         self.get_logger().debug('{} - __cancel_callback'.format(self.__class__.__name__))
-        self.cancel_callback(goal_handle)
-        return CancelResponse.ACCEPT
-
+        return self.cancel_callback(goal_handle)
+        
     # PUBLIC
 
     def execute_callback(self, goal_handle: ServerGoalHandle) -> None:
         pass
 
-    def cancel_callback(self, goal_handle: ServerGoalHandle) -> None:
-        pass
+    def cancel_callback(self, goal_handle: ServerGoalHandle) -> CancelResponse:
+        return CancelResponse.ACCEPT
 
     def succeed(self) -> None:
         self.__succeed = True
