@@ -21,47 +21,9 @@ from carebt.nodeStatus import NodeStatus
 from rclpy.action import ActionClient
 from rclpy.action.client import ClientGoalHandle
 from rclpy.task import Future
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.waitable import NumberOfEntities
 
 if TYPE_CHECKING:
     from carebt.behaviorTreeRunner import BehaviorTreeRunner  # pragma: no cover
-
-def is_ready(self, wait_set):
-    """Return True if one or more entities are ready in the wait set."""
-    if self._client_handle is None:
-        return False
-    try:
-        ready_entities = _rclpy.rclpy_action_wait_set_is_ready(
-            self._client_handle,
-            wait_set)
-    except RuntimeError as r:
-        return False
-    self._is_feedback_ready = ready_entities[0]
-    self._is_status_ready = ready_entities[1]
-    self._is_goal_response_ready = ready_entities[2]
-    self._is_cancel_response_ready = ready_entities[3]
-    self._is_result_response_ready = ready_entities[4]
-    return any(ready_entities)
-
-def get_num_entities(self):
-    """Return number of each type of entity used in the wait set."""
-    if self._client_handle is None:
-        return NumberOfEntities()
-    try:
-        num_entities = _rclpy.rclpy_action_wait_set_get_num_entities(self._client_handle)
-    except RuntimeError as r:
-        return NumberOfEntities()
-    return NumberOfEntities(*num_entities)
-
-def add_to_wait_set(self, wait_set):
-    """Add entities to wait set."""
-    if self._client_handle is None:
-        return
-    try:
-        _rclpy.rclpy_action_wait_set_add(self._client_handle, wait_set)
-    except RuntimeError as r:
-        pass    
 
 class RosActionClientActionNode(ActionNode):
 
@@ -74,9 +36,6 @@ class RosActionClientActionNode(ActionNode):
         self.set_status(NodeStatus.IDLE)
         self._goal_handle: ClientGoalHandle
         self._goal_msg = action_type.Goal()
-        ActionClient.is_ready = is_ready
-        ActionClient.get_num_entities = get_num_entities
-        ActionClient.add_to_wait_set = add_to_wait_set
         self._action_client = ActionClient(bt_runner.node, action_type, action_name)
         self.get_logger().debug('{} - action_client.wait_for_server...'
                                 .format(self.__class__.__name__))
@@ -105,7 +64,6 @@ class RosActionClientActionNode(ActionNode):
         if self._get_result_future is not None:
             self._get_result_future._callbacks = []
         self._action_client._feedback_callbacks = {}
-        self._action_client.destroy()
         super()._internal_on_delete()
 
     def _internal_result_callback(self, future: Future) -> None:
