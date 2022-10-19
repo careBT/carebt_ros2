@@ -24,7 +24,7 @@ from rclpy.node import Node
 ########################################################################
 
 
-class BtNode(Thread):
+class _BtNode(Thread):
 
     def __init__(self, ros_node: Node):
         Thread.__init__(self, target=self.thread, daemon=True)
@@ -54,7 +54,7 @@ class RosCarebtRunner(Node):
         rclpy.init(args=None)
         Node.__init__(self, node_name)
 
-        self.__btNode = BtNode(self)
+        self.__btNode = _BtNode(self)
         self.__btNode.start()
 
     def run(self, node: TreeNode, params: str = None) -> None:
