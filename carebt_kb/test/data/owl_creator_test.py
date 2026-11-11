@@ -21,7 +21,7 @@ with test:
     class Test(Thing): pass
     class Subtest(Thing): pass
     
-    # Task
+    # Test
     class test_int(Test >> int, FunctionalProperty): pass
     class test_bool(Test >> bool, FunctionalProperty): pass
     class test_float(Test >> float, FunctionalProperty): pass
@@ -42,7 +42,7 @@ with test:
     class test_date_list(Test >> datetime.date): pass
     class test_time_list(Test >> datetime.time): pass
     
-    # SubTask
+    # Subtest
     class id(Subtest >> str, FunctionalProperty): pass
     
     AllDisjoint([Test, Subtest])

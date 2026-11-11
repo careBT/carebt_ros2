@@ -23,7 +23,7 @@ from carebt_kb.plugin_base import import_class
 
 from rclpy.action import ActionServer, CancelResponse
 from rclpy.node import Node
-from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.action.server import ServerGoalHandle
 
@@ -42,7 +42,6 @@ class KbServer(Node):
     def __init__(self, node_name: str):
         super().__init__(node_name)
 
-        self.__condition = threading.Condition()
         self.__pending_goals = []
         self.__pending_lock = threading.Lock()
 
@@ -87,13 +86,13 @@ class KbServer(Node):
             plugin_class = import_class(plugin_type)
             self.__plugins.append(plugin_class(self, plugin))
 
-        # Start evaluator worker thread
-        self.__eval_thread = threading.Thread(target=self.__evaluator_loop, daemon=True, name='eval_worker')
-        self.__eval_thread.start()
+        # exclusive group ensures a single evaluator; repeated triggers coalesce
+        self.__eval_trigger = self.create_guard_condition(
+            self.__evaluate_pending_goals,
+            callback_group=MutuallyExclusiveCallbackGroup())
 
     def __kb_updated(self):
-        with self.__condition:
-            self.__condition.notify_all()
+        self.__eval_trigger.trigger()
         for plugin in self.__plugins:
             plugin.on_update_callback()
 
@@ -105,16 +104,7 @@ class KbServer(Node):
         goal_handle.executing()
         with self.__pending_lock:
             self.__pending_goals.append(goal_handle)
-        # Wake evaluators for immediate check
-        with self.__condition:
-            self.__condition.notify_all()
-
-    def __evaluator_loop(self):
-        """Worker thread that evaluates all pending goals."""
-        while True:
-            with self.__condition:
-                self.__condition.wait(timeout=1.0)
-            self.__evaluate_pending_goals()
+        self.__eval_trigger.trigger()
 
     def __evaluate_pending_goals(self):
         with self.__pending_lock:
@@ -130,27 +120,40 @@ class KbServer(Node):
                 continue
 
             if goal_handle.is_cancel_requested:
-                goal_handle.canceled(KbEvalState.Result())
-                self.get_logger().info('evaluate -- Goal canceled')
+                try:
+                    goal_handle.canceled(KbEvalState.Result())
+                    self.get_logger().info('evaluate -- Goal canceled')
+                except Exception:
+                    pass
                 completed.append(goal_handle)
                 continue
 
             goal = goal_handle.request
             filter_dict = json.loads(goal.filter)
-            result = self.read(filter_dict)
-            try:
-                if eval(goal.eval):
+            # Hold KB lock across read+eval to prevent false positives from stale data
+            with self.__kb.lock:
+                result = self.read(filter_dict)
+                try:
+                    eval_result = eval(goal.eval)
+                except Exception as e:
+                    eval_result = None
+                    msg = f'eval: {goal.eval} -- EXCEPTION: {e}'
+                    self.get_logger().warn(msg)
+                    self.get_logger().warn(f'result= {result}')
+                    feedback_msg = KbEvalState.Feedback()
+                    feedback_msg.message = msg
+                    try:
+                        goal_handle.publish_feedback(feedback_msg)
+                    except Exception:
+                        completed.append(goal_handle)
+            if eval_result:
+                try:
                     goal_handle.succeed(KbEvalState.Result())
                     self.get_logger().info(
                         f'evaluate -- Goal succeeded: {goal.filter}, {goal.eval}')
-                    completed.append(goal_handle)
-            except Exception as e:
-                msg = f'eval: {goal.eval} -- EXCEPTION: {e}'
-                self.get_logger().warn(msg)
-                self.get_logger().warn(f'result= {result}')
-                feedback_msg = KbEvalState.Feedback()
-                feedback_msg.message = msg
-                goal_handle.publish_feedback(feedback_msg)
+                except Exception:
+                    pass
+                completed.append(goal_handle)
 
         if completed:
             with self.__pending_lock:
@@ -159,16 +162,18 @@ class KbServer(Node):
 
     def __wait_eval_state_cancel_callback(self, goal_handle):
         self.get_logger().info(f'cancel_callback -- Received cancel request: {goal_handle}')
-        # Wake evaluators to process the cancellation
-        with self.__condition:
-            self.__condition.notify_all()
+        self.__eval_trigger.trigger()
         return CancelResponse.ACCEPT
 
     ## CRUD query callback
 
     def __crud_query_callback(self, request: KbQuery.Request, response: KbQuery.Response):
-        self.get_logger().info(
-            f'Incoming request: {request.operation}, filter: {request.filter}, data: {request.data}')
+        if request.operation == 'READ':
+            self.get_logger().debug(
+                f'Incoming request: {request.operation}, filter: {request.filter}')
+        else:
+            self.get_logger().info(
+                f'Incoming request: {request.operation}, filter: {request.filter}')
 
         # create
         if(request.operation.upper() == 'CREATE'):

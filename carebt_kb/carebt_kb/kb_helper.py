@@ -22,7 +22,7 @@ def dict_from_kb_response(response: KbQuery.Response):
 
 def kb_rosstr_from_ros_msg(ros_msg):
     msg_dict = message_converter.convert_ros_message_to_dictionary(ros_msg)
-    return json.dumps(msg_dict).replace('"', '\\"')
+    return json.dumps(msg_dict)
 
 def kb_rosstr_from_ros_msg_list(ros_msg_list: list):
     rosstr_list = []
