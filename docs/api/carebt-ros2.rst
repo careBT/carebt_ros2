@@ -29,6 +29,13 @@ RosActionServerSequenceNode
    :members:
    :show-inheritance:
 
+RosServiceCallActionNode
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: carebt_ros2.rosServiceCallActionNode
+   :members:
+   :show-inheritance:
+
 RosSubscriberActionNode
 ^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -18,6 +18,7 @@ from carebt_ros2.rosActionServerSequenceNode import RosActionServerSequenceNode
 from carebt_ros2.rosCarebtRunner import RosCarebtRunner
 from carebt_ros2.rosClientManager import RosClientManager
 from carebt_ros2.rosLogger import RosLogger
+from carebt_ros2.rosServiceCallActionNode import RosServiceCallActionNode
 from carebt_ros2.rosServiceClientActionNode import RosServiceClientActionNode
 from carebt_ros2.rosSubscriberActionNode import RosSubscriberActionNode
 
@@ -26,6 +27,7 @@ __all__ = ['RosActionClientActionNode',
            'RosCarebtRunner',
            'RosClientManager',
            'RosLogger',
+           'RosServiceCallActionNode',
            'RosServiceClientActionNode',
            'RosSubscriberActionNode',
            'OdomSmoother',

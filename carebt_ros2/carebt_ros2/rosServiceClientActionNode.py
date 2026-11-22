@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from threading import Thread
 from typing import TYPE_CHECKING
 
-from carebt.actionNode import ActionNode
 from carebt.nodeStatus import NodeStatus
+from carebt_ros2.rosServiceCallActionNode import RosServiceCallActionNode
 
 
 if TYPE_CHECKING:
     from carebt.behaviorTreeRunner import BehaviorTreeRunner  # pragma: no cover
 
 
-class RosServiceClientActionNode(ActionNode):
+class RosServiceClientActionNode(RosServiceCallActionNode):
     """Call a ROS2 service.
 
     Generic BT action node that issues a single request/response service
@@ -57,17 +56,11 @@ class RosServiceClientActionNode(ActionNode):
                                        self._service,
                                        self._type))
         self.set_status(NodeStatus.SUSPENDED)
-        Thread(target=self.__worker, daemon=True).start()
-
-    def __worker(self) -> None:
         client = self.__bt_runner.node.client_manager \
             .get_or_create_service_client(self._type, self._service)
-        if client.wait_for_service(timeout_sec=1.0):
-            self._response = client.call(self._request)
-            self.set_status(NodeStatus.SUCCESS)
-            self.get_logger().info(
-                f'service call successful')
-        else:
-            self.set_status(NodeStatus.FAILURE)
-            self.set_contingency_message('SERVICE_NOT_AVAILABLE')
-            self.get_logger().warn(f'service not available: {self._service}')
+        self.call_service(client, self._request, self.__on_response)
+
+    def __on_response(self, response) -> None:
+        self._response = response
+        self.set_status(NodeStatus.SUCCESS)
+        self.get_logger().info('service call successful')

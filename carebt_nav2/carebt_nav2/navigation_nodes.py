@@ -31,8 +31,6 @@ from nav2_msgs.action import FollowPath
 from nav2_msgs.action import NavigateToPose
 import rclpy
 from tf2_ros import TransformException
-import threading
-from time import sleep
 
 ########################################################################
 
@@ -78,41 +76,28 @@ class WaitForLocalizationTF(ActionNode):
     def __init__(self, bt_runner):
         super().__init__(bt_runner, '?initial_pose')
         self._tf_buffer = bt_runner.tf_buffer
+        self.set_throttle_ms(100)
         self.set_timeout(5000)
 
     def on_init(self) -> None:
-        self.set_status(NodeStatus.SUSPENDED)
-        self.__thread_running = True
-        self.__thread = threading.Thread(target=self.__worker)
-        self.__thread.start()
+        # the timeout is only considered for RUNNING or SUSPENDED nodes
+        self.set_status(NodeStatus.RUNNING)
 
-    def __worker(self):
-        while True:
-            if(not self.__thread_running):
-                break
-            try:
-                now = rclpy.time.Time()
-                trans = self._tf_buffer.lookup_transform(
-                    'map',
-                    'base_link',
-                    now)
-
-                if(abs(trans.transform.translation.x - self._initial_pose.pose.pose.position.x)
-                        < math.sqrt(self._initial_pose.pose.covariance[0])
-                   and abs(trans.transform.translation.y - self._initial_pose.pose.pose.position.y)
-                        < math.sqrt(self._initial_pose.pose.covariance[7])):
-                    # AMCL pose ok
-                    self.get_logger().info('{} - localization pose ok'
-                                           .format(self.__class__.__name__))
-                    self.set_status(NodeStatus.SUCCESS)
-                    break
-            except TransformException:
-                pass
-
-            sleep(0.1)
+    def on_tick(self) -> None:
+        try:
+            trans = self._tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
+        except TransformException:
+            return
+        if(abs(trans.transform.translation.x - self._initial_pose.pose.pose.position.x)
+                < math.sqrt(self._initial_pose.pose.covariance[0])
+           and abs(trans.transform.translation.y - self._initial_pose.pose.pose.position.y)
+                < math.sqrt(self._initial_pose.pose.covariance[7])):
+            # AMCL pose ok
+            self.get_logger().info('{} - localization pose ok'
+                                   .format(self.__class__.__name__))
+            self.set_status(NodeStatus.SUCCESS)
 
     def on_timeout(self) -> None:
-        self.__thread_running = False
         self.set_status(NodeStatus.FAILURE)
         self.set_contingency_message('NOT_LOCALIZED')
 
@@ -134,32 +119,18 @@ class GetCurrentPose(ActionNode):
     def __init__(self, bt_runner):
         super().__init__(bt_runner, '=> ?pose')
         self._tf_buffer = self.bt_runner.tf_buffer
+        self.set_throttle_ms(100)
         self.set_timeout(3000)
 
     def on_init(self) -> None:
-        self.set_status(NodeStatus.SUSPENDED)
-        self.__thread_running = True
-        self.__thread = threading.Thread(target=self.__worker)
-        self.__thread.start()
+        self.set_status(NodeStatus.RUNNING)
 
-    def __worker(self):
-        while True:
-            if(not self.__thread_running):
-                break
-            # get current pose
-            robot_frame = 'base_link'
-            global_frame = 'map'
-            self._pose = get_current_pose(global_frame,
-                                        robot_frame,
-                                        self._tf_buffer)
-            if(self._pose is not None):
-                self.set_status(NodeStatus.SUCCESS)
-                break
-
-            sleep(0.1)
+    def on_tick(self) -> None:
+        self._pose = get_current_pose('map', 'base_link', self._tf_buffer)
+        if(self._pose is not None):
+            self.set_status(NodeStatus.SUCCESS)
 
     def on_timeout(self) -> None:
-        self.__thread_running = False
         self.set_status(NodeStatus.FAILURE)
         self.set_contingency_message('CURRENT_POSE_NOT_AVAILABLE')
 

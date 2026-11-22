@@ -45,8 +45,7 @@ def get_current_pose(global_frame: str,
         trans = tf.lookup_transform(
             global_frame,
             robot_frame,
-            now,
-            rclpy.duration.Duration(seconds=0.2))
+            now)
     except TransformException:
         return
     current_pose = PoseStamped()

@@ -39,11 +39,6 @@ class RosActionClientActionNode(ActionNode):
         self._goal_msg = action_type.Goal()
         self._action_client = bt_runner.node.client_manager \
             .get_or_create_action_client(action_type, action_name)
-        self.get_logger().debug('{} - action_client.wait_for_server...'
-                                .format(self.__class__.__name__))
-        self._action_client.wait_for_server()  # TODO: Timeout
-        self.get_logger().debug('{} - action_client.wait_for_server -> OK'
-                                .format(self.__class__.__name__))
 
     # PRIVATE
 
@@ -60,7 +55,7 @@ class RosActionClientActionNode(ActionNode):
 
     def _internal_on_abort(self) -> None:
         if self._goal_handle is not None:
-            self._goal_handle.cancel_goal()
+            self._goal_handle.cancel_goal_async()
         elif hasattr(self, '_goal_future') and self._goal_future is not None:
             # goal sent but server hasn't responded yet. Replace the response callback with a 
             # standalone closure that cancels the goal.
@@ -71,7 +66,7 @@ class RosActionClientActionNode(ActionNode):
                 goal_handle = future.result()
                 if goal_handle.accepted:
                     logger.info(f'{self.__class__.__name__} - cancelling goal after late accept')
-                    goal_handle.cancel_goal()
+                    goal_handle.cancel_goal_async()
 
             self._goal_future.add_done_callback(_cancel_on_accept)
         super()._internal_on_abort()
@@ -107,6 +102,11 @@ class RosActionClientActionNode(ActionNode):
                 int((current_ts - self._last_ts).total_seconds() * 1000) >= self._throttle_ms):
             if(self.get_status() == NodeStatus.IDLE or
                     self.get_status() == NodeStatus.RUNNING):
+                # never block the tick: wait for the server by trying again with the next tick
+                if not self._action_client.server_is_ready():
+                    self.bt_runner.get_logger().trace('{} - waiting for action server'
+                                                      .format(self.__class__.__name__))
+                    return
                 self.bt_runner.get_logger().trace('ticking {} - {}'
                                                   .format(self.__class__.__name__,
                                                           self.get_status()))

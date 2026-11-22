@@ -14,12 +14,11 @@
 
 from carebt.actionNode import ActionNode
 from carebt.nodeStatus import NodeStatus
+from carebt_ros2.rosServiceCallActionNode import RosServiceCallActionNode
 from carebt_ros2.rosSubscriberActionNode import RosSubscriberActionNode
 from lifecycle_msgs.srv import ChangeState, GetState
 from rcl_interfaces.srv import GetParameters, SetParameters
 from std_msgs.msg import Empty
-from threading import Timer, Thread
-from time import sleep
 from rclpy.parameter import Parameter, parameter_value_to_python
 
 ########################################################################
@@ -74,8 +73,7 @@ class WaitAction(ActionNode):
         self.get_logger().info('{} - wait for {} milliseconds...'
                                .format(self.__class__.__name__, self._time))
         self.set_status(NodeStatus.SUSPENDED)
-        self.__done_timer = Timer(self._time / 1000, self.done_callback)
-        self.__done_timer.start()
+        self.create_timer(self._time, self.done_callback)
 
     def done_callback(self) -> None:
         self.get_logger().info('{} - waiting done.'.format(self.__class__.__name__))
@@ -83,12 +81,6 @@ class WaitAction(ActionNode):
 
     def on_abort(self) -> None:
         self.get_logger().info('{} - waiting aborted.'.format(self.__class__.__name__))
-        self.__done_timer.cancel()
-
-    def on_delete(self) -> None:
-        # set the timer to None to make sure that all references (bound method)
-        # are released and the object gets destroyed by gc
-        self.__done_timer = None
 
 ########################################################################
 
@@ -111,7 +103,7 @@ class WaitForUserInput(RosSubscriberActionNode):
 ########################################################################
 
 
-class LifecycleClient(ActionNode):
+class LifecycleClient(RosServiceCallActionNode):
     """Changes the state of a Lifecycle Node.
     Transition ids:
     0: create
@@ -149,53 +141,43 @@ class LifecycleClient(ActionNode):
         self.get_logger().info('{} - put {} into state {}'
                                .format(self.__class__.__name__, self._node, self._id))
         self.set_status(NodeStatus.SUSPENDED)
-        self.__thread_running = True
         # self.__expected_goal_state = [0, 2, 1, 3, 2, 4, 4, 4][self._id]
         self.__expected_goal_state = [1, 2, 1, 3, 2, 4, 4, 4, None][self._id]
-        Thread(target=self.__worker, daemon=True).start()
-        
-    def __worker(self):
-        self.__change_state_client =\
-            self.__bt_runner.node.create_client(ChangeState, f'/{self._node}/change_state')
-        self.__get_state_client =\
-            self.__bt_runner.node.create_client(GetState, f'/{self._node}/get_state')
-        if(self.__change_state_client.wait_for_service(timeout_sec=1.0)
-           and self.__get_state_client.wait_for_service(timeout_sec=1.0)):
-            req = ChangeState.Request()
-            req.transition.id = self._id
-            res: ChangeState.Response = self.__change_state_client.call(req)
-            if not res.success:
-                self.set_status(NodeStatus.FAILURE)
-                self.set_contingency_message('CHANGE_STATE_FAILED')
-        else:
-            self.get_logger().warn('service not available')
+        client_manager = self.__bt_runner.node.client_manager
+        self.__change_state_client = client_manager.get_or_create_service_client(
+            ChangeState, f'/{self._node}/change_state')
+        self.__get_state_client = client_manager.get_or_create_service_client(
+            GetState, f'/{self._node}/get_state')
+        req = ChangeState.Request()
+        req.transition.id = self._id
+        # wait until the service is available, the node timeout limits the waiting time
+        self.call_service(self.__change_state_client, req, self.__on_change_state, wait_ms=None)
+
+    def __on_change_state(self, res: ChangeState.Response) -> None:
+        if not res.success:
             self.set_status(NodeStatus.FAILURE)
-            self.set_contingency_message('SERVICE_NOT_AVAILABLE')
+            self.set_contingency_message('CHANGE_STATE_FAILED')
+            return
+        self.__request_state()
 
-        while True:
-            if(not self.__thread_running):
-                break
-            req = GetState.Request()
-            res: GetState.Response = self.__get_state_client.call(req)
-            if res.current_state.id == self.__expected_goal_state:
-                self.set_status(NodeStatus.SUCCESS)
-                break
-            sleep(0.1)
+    def __request_state(self) -> None:
+        self.call_service(self.__get_state_client, GetState.Request(),
+                          self.__on_get_state, wait_ms=None)
 
+    def __on_get_state(self, res: GetState.Response) -> None:
+        if res.current_state.id == self.__expected_goal_state:
+            self.set_status(NodeStatus.SUCCESS)
+        else:
+            self.create_timer(100, self.__request_state)
 
     def on_timeout(self) -> None:
-        self.__thread_running = False
         self.set_status(NodeStatus.FAILURE)
         self.set_contingency_message('TIMEOUT')
-
-    def __del__(self) -> None:
-        self.__change_state_client.destroy()
-        self.__get_state_client.destroy()
 
 ########################################################################
 
 
-class SetParameterClient(ActionNode):
+class SetParameterClient(RosServiceCallActionNode):
     """Set the parameter (name/value) of the node.
 
     Input Parameters
@@ -220,31 +202,24 @@ class SetParameterClient(ActionNode):
                                        self._param_name,
                                        self._param_value))
         self.set_status(NodeStatus.SUSPENDED)
-        Thread(target=self.__worker, daemon=True).start()
-        
-    def __worker(self):
-        self.__client = self.__bt_runner.node.create_client(SetParameters,
-                                                            f'/{self._node}/set_parameters')
-        if(self.__client.wait_for_service(timeout_sec=1.0)):
-            param = Parameter(name=self._param_name, value=self._param_value)
+        client = self.__bt_runner.node.client_manager.get_or_create_service_client(
+            SetParameters, f'/{self._node}/set_parameters')
+        param = Parameter(name=self._param_name, value=self._param_value)
+        req = SetParameters.Request()
+        req.parameters = [param.to_parameter_msg()]
+        self.get_logger().info(f'Calling set_parameters service with {req.parameters}...')
+        self.call_service(client, req, self.__on_response)
 
-            req = SetParameters.Request()
-            req.parameters = [param.to_parameter_msg()]
-            self.get_logger().info(f'Calling set_parameters service with {req.parameters}...')
-            resp = self.__client.call(req)
-
-            if resp.results[0].successful:
-                self.set_status(NodeStatus.SUCCESS)
-            else:
-                self.set_status(NodeStatus.FAILURE)
-                self.set_contingency_message('PARAM_NOT_SET')
+    def __on_response(self, resp: SetParameters.Response) -> None:
+        if resp.results[0].successful:
+            self.set_status(NodeStatus.SUCCESS)
         else:
             self.set_status(NodeStatus.FAILURE)
-            self.set_contingency_message('SERVICE_NOT_AVAILABLE')
+            self.set_contingency_message('PARAM_NOT_SET')
 
 ########################################################################
 
-class SetParameterListClient(ActionNode):
+class SetParameterListClient(RosServiceCallActionNode):
     """Set the parameter (name/value) of the node.
 
     Input Parameters
@@ -268,32 +243,26 @@ class SetParameterListClient(ActionNode):
                                        self._node,
                                        [(param.name,param.value) for param in self._param_list]))
         self.set_status(NodeStatus.SUSPENDED)
-        Thread(target=self.__worker, daemon=True).start()
-        
-    def __worker(self):
-        self.__client = self.__bt_runner.node.create_client(SetParameters,
-                                                            f'/{self._node}/set_parameters')
-        if(self.__client.wait_for_service(timeout_sec=1.0)):
-            parameter_msgs = []
-            for param in self._param_list:
-                if isinstance(param, Parameter): parameter_msgs.append(param.to_parameter_msg())
-                else: self.get_logger().warn(f"Parameter {param} is not of type rclpy.Parameter and will be ignored.")
+        client = self.__bt_runner.node.client_manager.get_or_create_service_client(
+            SetParameters, f'/{self._node}/set_parameters')
+        parameter_msgs = []
+        for param in self._param_list:
+            if isinstance(param, Parameter): parameter_msgs.append(param.to_parameter_msg())
+            else: self.get_logger().warn(f"Parameter {param} is not of type rclpy.Parameter and will be ignored.")
 
-            req = SetParameters.Request()
-            req.parameters = parameter_msgs
+        req = SetParameters.Request()
+        req.parameters = parameter_msgs
+        self.call_service(client, req, self.__on_response)
 
-            resp = self.__client.call(req)
-            if all(resp.results[i].successful for i in range(len(resp.results))):
-                self.set_status(NodeStatus.SUCCESS)
-            else:
-                self.set_status(NodeStatus.FAILURE)
-                self.set_contingency_message('PARAM_NOT_SET')
+    def __on_response(self, resp: SetParameters.Response) -> None:
+        if all(result.successful for result in resp.results):
+            self.set_status(NodeStatus.SUCCESS)
         else:
             self.set_status(NodeStatus.FAILURE)
-            self.set_contingency_message('SERVICE_NOT_AVAILABLE')
+            self.set_contingency_message('PARAM_NOT_SET')
 
 
-class GetParameterClient(ActionNode):
+class GetParameterClient(RosServiceCallActionNode):
     """Get the parameter (name/value) of the node.
 
     Input Parameters
@@ -315,27 +284,22 @@ class GetParameterClient(ActionNode):
                                        self._node,
                                        self._param_name))
         self.set_status(NodeStatus.SUSPENDED)
-        Thread(target=self.__worker, daemon=True).start()
-        
-    def __worker(self):
-        self.__client = self.__bt_runner.node.create_client(GetParameters,
-                                                            f'/{self._node}/get_parameters')
-        if(self.__client.wait_for_service(timeout_sec=1.0)):
-            req = GetParameters.Request()
-            req.names = [self._param_name]
-            resp = self.__client.call(req)
-            if len(resp.values) > 0:
-                self.set_status(NodeStatus.SUCCESS)
-                self._param_value = parameter_value_to_python(resp.values[0])
-                self.get_logger().info('{} - {} got param {} with value {}'
-                                       .format(self.__class__.__name__,
-                                               self._node,
-                                               self._param_name,
-                                               self._param_value))
-            else:
-                self.set_status(NodeStatus.FAILURE)
-                self.set_contingency_message('PARAM_NOT_FOUND')
+        client = self.__bt_runner.node.client_manager.get_or_create_service_client(
+            GetParameters, f'/{self._node}/get_parameters')
+        req = GetParameters.Request()
+        req.names = [self._param_name]
+        self.call_service(client, req, self.__on_response)
+
+    def __on_response(self, resp: GetParameters.Response) -> None:
+        if len(resp.values) > 0:
+            self.set_status(NodeStatus.SUCCESS)
+            self._param_value = parameter_value_to_python(resp.values[0])
+            self.get_logger().info('{} - {} got param {} with value {}'
+                                   .format(self.__class__.__name__,
+                                           self._node,
+                                           self._param_name,
+                                           self._param_value))
         else:
             self.set_status(NodeStatus.FAILURE)
-            self.set_contingency_message('SERVICE_NOT_AVAILABLE')
+            self.set_contingency_message('PARAM_NOT_FOUND')
 
